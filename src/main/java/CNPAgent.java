@@ -1,6 +1,5 @@
 import com.github.rinde.rinsim.core.TickListener;
 import com.github.rinde.rinsim.core.TimeLapse;
-import com.github.rinde.rinsim.core.model.road.CollisionGraphRoadModel;
 import com.github.rinde.rinsim.core.model.road.GraphRoadModel;
 import com.github.rinde.rinsim.core.model.road.MovingRoadUser;
 import com.github.rinde.rinsim.core.model.road.RoadModel;
@@ -14,7 +13,7 @@ import java.util.Queue;
 /**
  * Created by bavo and michiel
  */
-public class CNPAgent implements TickListener, MovingRoadUser {
+public class CNPAgent extends FIPACNP implements TickListener, MovingRoadUser {
 
     private final RandomGenerator rng;
     private Optional<GraphRoadModel> roadModel;
