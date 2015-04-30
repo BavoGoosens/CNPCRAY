@@ -1,5 +1,7 @@
 import com.github.rinde.rinsim.core.TickListener;
 import com.github.rinde.rinsim.core.TimeLapse;
+import com.github.rinde.rinsim.core.model.comm.CommDeviceBuilder;
+import com.github.rinde.rinsim.core.model.comm.CommUser;
 import com.github.rinde.rinsim.core.model.road.GraphRoadModel;
 import com.github.rinde.rinsim.core.model.road.MovingRoadUser;
 import com.github.rinde.rinsim.core.model.road.RoadModel;
@@ -13,7 +15,7 @@ import java.util.Queue;
 /**
  * Created by bavo and michiel
  */
-public class CNPAgent extends FIPACNP implements TickListener, MovingRoadUser {
+public class CNPAgent extends FIPACNP implements TickListener, MovingRoadUser, CommUser {
 
     private final RandomGenerator rng;
     private Optional<GraphRoadModel> roadModel;
@@ -64,4 +66,13 @@ public class CNPAgent extends FIPACNP implements TickListener, MovingRoadUser {
     @Override
     public void afterTick(TimeLapse timeLapse) {}
 
+    @Override
+    public Optional<Point> getPosition() {
+        return null;
+    }
+
+    @Override
+    public void setCommDevice(CommDeviceBuilder commDeviceBuilder) {
+
+    }
 }
