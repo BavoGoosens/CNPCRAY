@@ -5,11 +5,13 @@ import com.github.rinde.rinsim.core.model.road.GraphRoadModel;
 import com.github.rinde.rinsim.geom.*;
 import com.github.rinde.rinsim.ui.View;
 import com.github.rinde.rinsim.ui.renderers.AGVRenderer;
+import com.github.rinde.rinsim.ui.renderers.CommRenderer;
 import com.github.rinde.rinsim.ui.renderers.GraphRoadModelRenderer;
 import com.github.rinde.rinsim.ui.renderers.RoadUserRenderer;
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
+import org.eclipse.swt.graphics.RGB;
 
 import java.util.Map;
 import java.util.ArrayList;
@@ -42,10 +44,26 @@ public class CNPCray {
             sim.register(new CNPAgent(sim.getRandomGenerator()));
         }
 
+        sim.register(new BatteryStation(sim.getRandomGenerator()));
+        sim.register(new BatteryStation(sim.getRandomGenerator()));
+        sim.register(new BatteryStation(sim.getRandomGenerator()));
+        sim.register(new BatteryStation(sim.getRandomGenerator()));
+        sim.register(new TaskStation(sim.getRandomGenerator()));
+        sim.register(new TaskStation(sim.getRandomGenerator()));
+        sim.register(new TaskStation(sim.getRandomGenerator()));
+        sim.register(new TaskStation(sim.getRandomGenerator()));
+
+
         View.create(sim)
                 .with(GraphRoadModelRenderer.builder()
                 )
                 .with(RoadUserRenderer.builder()
+                                .addColorAssociation(BatteryStation.class, new RGB(0, 255, 0))
+                                .addColorAssociation(CNPAgent.class, new RGB(255,0 , 0))
+                                .addColorAssociation(TaskStation.class, new RGB(0,0,255))
+                )
+                .with(CommRenderer.builder()
+                                .showReliabilityColors()
                 )
                 .show();
     }

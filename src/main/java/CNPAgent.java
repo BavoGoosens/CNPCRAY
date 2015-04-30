@@ -1,5 +1,6 @@
 import com.github.rinde.rinsim.core.TickListener;
 import com.github.rinde.rinsim.core.TimeLapse;
+import com.github.rinde.rinsim.core.model.comm.CommDevice;
 import com.github.rinde.rinsim.core.model.comm.CommDeviceBuilder;
 import com.github.rinde.rinsim.core.model.comm.CommUser;
 import com.github.rinde.rinsim.core.model.road.GraphRoadModel;
@@ -17,16 +18,24 @@ import java.util.Queue;
  */
 public class CNPAgent extends FIPACNP implements TickListener, MovingRoadUser, CommUser {
 
-    private final RandomGenerator rng;
     private Optional<GraphRoadModel> roadModel;
+    private Optional<CommDevice> device;
     private Optional<Point> destination;
     private Queue<Point> path;
+    private final double range;
+    private final double reliability;
+    private final RandomGenerator rng;
+    long lastReceiveTime = 0;
 
     CNPAgent(RandomGenerator r) {
         rng = r;
         roadModel = Optional.absent();
         destination = Optional.absent();
         path = new LinkedList<>();
+        device = Optional.absent();
+
+        range = rng.nextDouble();
+        reliability = rng.nextDouble();
     }
 
     @Override
@@ -68,11 +77,17 @@ public class CNPAgent extends FIPACNP implements TickListener, MovingRoadUser, C
 
     @Override
     public Optional<Point> getPosition() {
-        return null;
+        Point p = this.roadModel.get().getPosition(this);
+        return Optional.of(p);
     }
 
     @Override
     public void setCommDevice(CommDeviceBuilder commDeviceBuilder) {
-
+        if (range >= 0) {
+            commDeviceBuilder.setMaxRange(range);
+        }
+        device = Optional.of(commDeviceBuilder
+                .setReliability(reliability)
+                .build());
     }
 }
