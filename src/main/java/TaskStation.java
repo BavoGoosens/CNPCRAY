@@ -18,8 +18,10 @@ public class TaskStation implements CommUser, RoadUser {
     private Optional<CommDevice> device;
     private final double range;
     private final double reliability;
+    private final Point position;
 
-    public TaskStation(RandomGenerator rng){
+    public TaskStation(RandomGenerator rng, Point point){
+        this.position = point;
         this.rng = rng;
         roadModel = Optional.absent();
         device = Optional.absent();
@@ -47,6 +49,6 @@ public class TaskStation implements CommUser, RoadUser {
         Point p;
         /*while (roadModel.get().isOccupied(p = model.getRandomPosition(rng))) {}*/
         p = roadModel.getRandomPosition(rng);
-        this.roadModel.get().addObjectAt(this, p);
+        this.roadModel.get().addObjectAt(this, this.position);
     }
 }

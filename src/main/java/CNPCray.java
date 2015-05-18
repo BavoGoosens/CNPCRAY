@@ -44,14 +44,14 @@ public class CNPCray {
             sim.register(new CNPAgent(sim.getRandomGenerator()));
         }
 
-        sim.register(new BatteryStation(sim.getRandomGenerator()));
-        sim.register(new BatteryStation(sim.getRandomGenerator()));
-        sim.register(new BatteryStation(sim.getRandomGenerator()));
-        sim.register(new BatteryStation(sim.getRandomGenerator()));
-        sim.register(new TaskStation(sim.getRandomGenerator()));
-        sim.register(new TaskStation(sim.getRandomGenerator()));
-        sim.register(new TaskStation(sim.getRandomGenerator()));
-        sim.register(new TaskStation(sim.getRandomGenerator()));
+        sim.register(new BatteryStation(sim.getRandomGenerator(), new Point(0, 15)));
+        sim.register(new BatteryStation(sim.getRandomGenerator(), new Point(15, 0)));
+        sim.register(new BatteryStation(sim.getRandomGenerator(), new Point(29, 15)));
+        sim.register(new BatteryStation(sim.getRandomGenerator(), new Point(15, 29)));
+        sim.register(new TaskStation(sim.getRandomGenerator(), new Point(0,0)));
+        sim.register(new TaskStation(sim.getRandomGenerator(), new Point(0,29)));
+        sim.register(new TaskStation(sim.getRandomGenerator(), new Point(29, 0)));
+        sim.register(new TaskStation(sim.getRandomGenerator(), new Point(29, 29)));
 
 
         View.create(sim)

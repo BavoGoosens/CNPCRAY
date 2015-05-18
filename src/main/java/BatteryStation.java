@@ -8,6 +8,8 @@ import com.github.rinde.rinsim.geom.Point;
 import com.google.common.base.Optional;
 import org.apache.commons.math3.random.RandomGenerator;
 
+import javax.swing.text.Position;
+
 /**
  * Created by bavo and michiel.
  */
@@ -18,8 +20,10 @@ public class BatteryStation implements CommUser, RoadUser{
     private Optional<CommDevice> device;
     private final double range;
     private final double reliability;
+    private final Point position;
 
-    public  BatteryStation(RandomGenerator rng){
+    public  BatteryStation(RandomGenerator rng, Point p){
+        this.position = p;
         this.rng = rng;
         roadModel = Optional.absent();
         device = Optional.absent();
@@ -35,7 +39,7 @@ public class BatteryStation implements CommUser, RoadUser{
 
     @Override
     public void setCommDevice(CommDeviceBuilder commDeviceBuilder) {
-        commDeviceBuilder.setMaxRange(10);
+        commDeviceBuilder.setMaxRange(6);
         device = Optional.of(commDeviceBuilder
                 .setReliability(0.3)
                 .build());
@@ -47,6 +51,6 @@ public class BatteryStation implements CommUser, RoadUser{
         Point p;
         /*while (roadModel.get().isOccupied(p = model.getRandomPosition(rng))) {}*/
         p = roadModel.getRandomPosition(rng);
-        this.roadModel.get().addObjectAt(this, p);
+        this.roadModel.get().addObjectAt(this, this.position);
     }
 }
