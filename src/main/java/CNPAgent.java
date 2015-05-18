@@ -50,7 +50,7 @@ public class CNPAgent extends FIPACNP implements TickListener, MovingRoadUser, C
 
     @Override
     public double getSpeed() {
-        return 1;
+        return 50.0D;
     }
 
     void nextDestination() {
@@ -84,7 +84,7 @@ public class CNPAgent extends FIPACNP implements TickListener, MovingRoadUser, C
     @Override
     public void setCommDevice(CommDeviceBuilder commDeviceBuilder) {
         if (range >= 0) {
-            commDeviceBuilder.setMaxRange(range);
+            commDeviceBuilder.setMaxRange(2);
         }
         device = Optional.of(commDeviceBuilder
                 .setReliability(reliability)
