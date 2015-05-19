@@ -31,7 +31,7 @@ public class CNPCray {
     public static void main(String[] args) {
         int graphSize = 30;
         int numberOfEmptyConnections = 15;
-        int numberOfAgents = 50;
+        int numberOfAgents = 1;
         final DefaultPDPModel pdpModel = DefaultPDPModel.create();
         final CommModel commModel = CommModel.builder().build();
         final Simulator sim = Simulator.builder()

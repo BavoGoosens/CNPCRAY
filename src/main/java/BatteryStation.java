@@ -9,6 +9,8 @@ import com.google.common.base.Optional;
 import org.apache.commons.math3.random.RandomGenerator;
 
 import javax.swing.text.Position;
+import java.util.ArrayList;
+import java.util.Map;
 
 /**
  * Created by bavo and michiel.
@@ -21,14 +23,32 @@ public class BatteryStation implements CommUser, RoadUser{
     private final double range;
     private final double reliability;
     private final Point position;
+    private ArrayList<EnergyLoad> energyLoads = new ArrayList<EnergyLoad>();
 
-    public  BatteryStation(RandomGenerator rng, Point p){
+    public BatteryStation(RandomGenerator rng, Point p){
         this.position = p;
         this.rng = rng;
         roadModel = Optional.absent();
         device = Optional.absent();
         range = rng.nextDouble();
         reliability = rng.nextDouble();
+    }
+
+    public void loadBattery(CNPAgent agent) {
+        if (!agent.getPosition().equals(this.getPosition())) {
+            throw new IllegalArgumentException("The battery of agent: "+agent.toString()+" cannot be loaded " +
+                    " by this battery station "+this.toString()+" because it is not located here.");
+        }
+        long energyLoaded = agent.loadFullBattery();
+        this.energyLoads.add(new EnergyLoad(agent, energyLoaded));
+    }
+
+    public long getTotalEnergyLoaded() {
+        long totalEnergyLoaded = 0;
+        for (EnergyLoad energyLoad: this.energyLoads) {
+            totalEnergyLoaded += energyLoad.getEnergyLoaded();
+        }
+        return totalEnergyLoaded;
     }
 
     @Override

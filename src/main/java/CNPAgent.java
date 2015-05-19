@@ -25,10 +25,18 @@ public class CNPAgent extends FIPACNP implements TickListener, MovingRoadUser, C
     private final double range;
     private final double reliability;
     private final RandomGenerator rng;
-    long lastReceiveTime = 0;
+    private long lastReceiveTime = 0;
+    private long energy;
+    private final static long moveCost = 10;
+    private final static long fullEnergy = 100000;
 
     CNPAgent(RandomGenerator r) {
+        this(r, fullEnergy);
+    }
+
+    CNPAgent(RandomGenerator r, long energy) {
         rng = r;
+        this.energy = energy;
         roadModel = Optional.absent();
         destination = Optional.absent();
         path = new LinkedList<>();
@@ -36,6 +44,10 @@ public class CNPAgent extends FIPACNP implements TickListener, MovingRoadUser, C
 
         range = rng.nextDouble();
         reliability = rng.nextDouble();
+    }
+
+    public long getEnergy() {
+        return this.energy;
     }
 
     @Override
@@ -53,27 +65,55 @@ public class CNPAgent extends FIPACNP implements TickListener, MovingRoadUser, C
         return 50.0D;
     }
 
-    void nextDestination() {
-        destination = Optional.of(roadModel.get().getRandomPosition(rng));
-        path = new LinkedList<>(roadModel.get().getShortestPathTo(this,
-                destination.get()));
-    }
-
     @Override
     public void tick(TimeLapse timeLapse) {
+        if (this.energy - moveCost >= 0) {
+            this.move(timeLapse);
+            this.decreaseEnergyWith(moveCost);
+        }
+    }
+
+    private void move(TimeLapse timeLapse) {
         if (!destination.isPresent()) {
-            nextDestination();
+            this.setNextDestination();
         }
 
         roadModel.get().followPath(this, path, timeLapse);
 
         if (roadModel.get().getPosition(this).equals(destination.get())) {
-            nextDestination();
+            this.setNextDestination();
+        }
+    }
+
+    private void decreaseEnergyWith(long energyDecrease) {
+        if (this.energy - energyDecrease < 0) {
+            throw new IllegalArgumentException("The agent does not have enough energy.");
+        }
+        this.energy -= energyDecrease;
+    }
+
+    public long loadFullBattery() {
+        long energyIncrease = fullEnergy - this.energy;
+        this.energy = fullEnergy;
+        return energyIncrease;
+    }
+
+    private void setNextDestination() {
+        destination = Optional.of(roadModel.get().getRandomPosition(rng));
+        path = new LinkedList<>(roadModel.get().getShortestPathTo(this,
+                destination.get()));
+        long energyNeeded = path.size()*moveCost*72;
+        System.out.println("Energy needed: "+energyNeeded);
+        System.out.println("Battery: "+energy);
+        if (energyNeeded > this.energy) {
+            System.out.println("Find a battery station...");
         }
     }
 
     @Override
-    public void afterTick(TimeLapse timeLapse) {}
+    public void afterTick(TimeLapse timeLapse) {
+
+    }
 
     @Override
     public Optional<Point> getPosition() {
@@ -90,4 +130,6 @@ public class CNPAgent extends FIPACNP implements TickListener, MovingRoadUser, C
                 .setReliability(reliability)
                 .build());
     }
+
+
 }
