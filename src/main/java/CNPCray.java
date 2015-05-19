@@ -13,6 +13,8 @@ import com.github.rinde.rinsim.ui.renderers.RoadUserRenderer;
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
+import org.apache.commons.math3.random.MersenneTwister;
+import org.apache.commons.math3.random.RandomGenerator;
 import org.eclipse.swt.graphics.RGB;
 
 import java.util.Map;
@@ -33,7 +35,8 @@ public class CNPCray {
     public static void main(String[] args) {
         int graphSize = 30;
         int numberOfEmptyConnections = 15;
-        int numberOfAgents = 1;
+        int numberOfAgents = 50;
+        final RandomGenerator rng = new MersenneTwister(123);
         final DefaultPDPModel pdpModel = DefaultPDPModel.create();
         final CommModel commModel = CommModel.builder().build();
         final RoadModel roadModel = new CNPRoadModel(createGraph(graphSize, numberOfEmptyConnections));
@@ -46,15 +49,22 @@ public class CNPCray {
         for (int i = 0; i < numberOfAgents; i++) {
             sim.register(new CNPAgent(sim.getRandomGenerator()));
         }
-        sim.register(new Task(new Point(0,0), new Point(29, 29), 10));
+
+        /*for (int i = 0; i < 5; i++){
+            Point origin = roadModel.getRandomPosition(rng);
+            Point destination = roadModel.getRandomPosition(rng);
+            sim.register(new Task(origin, destination, 10));
+        }
+        */
+        //sim.register(new Task(new Point(0,0), new Point(29, 29), 10));
         sim.register(new BatteryStation(sim.getRandomGenerator(), new Point(0, 15)));
         sim.register(new BatteryStation(sim.getRandomGenerator(), new Point(15, 0)));
         sim.register(new BatteryStation(sim.getRandomGenerator(), new Point(29, 15)));
         sim.register(new BatteryStation(sim.getRandomGenerator(), new Point(15, 29)));
-        sim.register(new TaskStation(sim.getRandomGenerator(), new Point(0,0)));
-        sim.register(new TaskStation(sim.getRandomGenerator(), new Point(0,29)));
-        sim.register(new TaskStation(sim.getRandomGenerator(), new Point(29, 0)));
-        sim.register(new TaskStation(sim.getRandomGenerator(), new Point(29, 29)));
+        sim.register(new TaskStation(sim.getRandomGenerator(), new Point(0,0), pdpModel, roadModel));
+        sim.register(new TaskStation(sim.getRandomGenerator(), new Point(0,29), pdpModel, roadModel));
+        sim.register(new TaskStation(sim.getRandomGenerator(), new Point(29, 0), pdpModel, roadModel));
+        sim.register(new TaskStation(sim.getRandomGenerator(), new Point(29, 29), pdpModel, roadModel));
 
 
         View.create(sim)
@@ -62,12 +72,14 @@ public class CNPCray {
                 )
                 .with(RoadUserRenderer.builder()
                                 .addColorAssociation(BatteryStation.class, new RGB(0, 255, 0))
-                                .addColorAssociation(CNPAgent.class, new RGB(255,0 , 0))
-                                .addColorAssociation(TaskStation.class, new RGB(0,0,255))
+                                .addColorAssociation(CNPAgent.class, new RGB(255, 0, 0))
+                                .addColorAssociation(TaskStation.class, new RGB(0, 0, 255))
+                                .addColorAssociation(Task.class, new RGB(160, 148, 255))
                 )
                 .with(CommRenderer.builder()
                                 .showReliabilityColors()
                 )
+                .with(new TaskRenderer())
                 .show();
     }
 
