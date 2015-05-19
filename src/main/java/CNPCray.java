@@ -1,6 +1,7 @@
 import com.github.rinde.rinsim.core.Simulator;
 import com.github.rinde.rinsim.core.model.comm.CommModel;
 import com.github.rinde.rinsim.core.model.pdp.DefaultPDPModel;
+import com.github.rinde.rinsim.core.model.pdp.Parcel;
 import com.github.rinde.rinsim.core.model.road.GraphRoadModel;
 import com.github.rinde.rinsim.geom.*;
 import com.github.rinde.rinsim.ui.View;
@@ -43,7 +44,7 @@ public class CNPCray {
         for (int i = 0; i < numberOfAgents; i++) {
             sim.register(new CNPAgent(sim.getRandomGenerator()));
         }
-
+        sim.register(new Task(new Point(0,0), new Point(29, 29), 10));
         sim.register(new BatteryStation(sim.getRandomGenerator(), new Point(0, 15)));
         sim.register(new BatteryStation(sim.getRandomGenerator(), new Point(15, 0)));
         sim.register(new BatteryStation(sim.getRandomGenerator(), new Point(29, 15)));
