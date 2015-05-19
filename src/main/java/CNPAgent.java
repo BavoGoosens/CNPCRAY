@@ -3,6 +3,8 @@ import com.github.rinde.rinsim.core.TimeLapse;
 import com.github.rinde.rinsim.core.model.comm.CommDevice;
 import com.github.rinde.rinsim.core.model.comm.CommDeviceBuilder;
 import com.github.rinde.rinsim.core.model.comm.CommUser;
+import com.github.rinde.rinsim.core.model.pdp.PDPModel;
+import com.github.rinde.rinsim.core.model.pdp.Vehicle;
 import com.github.rinde.rinsim.core.model.road.GraphRoadModel;
 import com.github.rinde.rinsim.core.model.road.MovingRoadUser;
 import com.github.rinde.rinsim.core.model.road.RoadModel;
@@ -16,9 +18,10 @@ import java.util.Queue;
 /**
  * Created by bavo and michiel
  */
-public class CNPAgent extends FIPACNP implements TickListener, MovingRoadUser, CommUser {
+public class CNPAgent extends Vehicle implements CommUser {
 
-    private Optional<GraphRoadModel> roadModel;
+    private Optional<RoadModel> roadModel;
+    private Optional<PDPModel> pdpModel;
     private Optional<CommDevice> device;
     private Optional<Point> destination;
     private Queue<Point> path;
@@ -51,13 +54,13 @@ public class CNPAgent extends FIPACNP implements TickListener, MovingRoadUser, C
     }
 
     @Override
-    public void initRoadUser(RoadModel model) {
-        roadModel = Optional.of((GraphRoadModel) model);
+    public void initRoadPDP(RoadModel roadModel, PDPModel pdpModel) {
+        this.roadModel = Optional.of(roadModel);
+        this.pdpModel = Optional.of(pdpModel);
 
         Point p;
-        /*while (roadModel.get().isOccupied(p = model.getRandomPosition(rng))) {}*/
-        p = model.getRandomPosition(rng);
-        roadModel.get().addObjectAt(this, p);
+        p = roadModel.getRandomPosition(rng);
+        roadModel.addObjectAt(this, p);
     }
 
     @Override
@@ -66,7 +69,7 @@ public class CNPAgent extends FIPACNP implements TickListener, MovingRoadUser, C
     }
 
     @Override
-    public void tick(TimeLapse timeLapse) {
+    public void tickImpl(TimeLapse timeLapse) {
         if (this.energy - moveCost >= 0) {
             this.move(timeLapse);
             this.decreaseEnergyWith(moveCost);
