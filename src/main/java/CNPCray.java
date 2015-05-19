@@ -97,7 +97,7 @@ public class CNPCray {
     }
 
     private static ArrayList<Integer> generateEmptyConnections(int n, int count) {
-        Random random = new Random();
+        Random random = new Random(30000);
         ArrayList<Integer> emptyConnections = new ArrayList<Integer>();
         for (int i = 0; i < count; i++) {
             emptyConnections.add(random.nextInt(n));
