@@ -1,7 +1,8 @@
 import com.github.rinde.rinsim.core.model.ModelProvider;
 import com.github.rinde.rinsim.core.model.pdp.PDPModel;
+import com.github.rinde.rinsim.core.model.pdp.Parcel;
+import com.github.rinde.rinsim.core.model.pdp.Vehicle;
 import com.github.rinde.rinsim.core.model.road.RoadModel;
-import com.github.rinde.rinsim.examples.demo.factory.Box;
 import com.github.rinde.rinsim.geom.Point;
 import com.github.rinde.rinsim.ui.renderers.ModelRenderer;
 import com.github.rinde.rinsim.ui.renderers.UiSchema;
@@ -9,8 +10,13 @@ import com.github.rinde.rinsim.ui.renderers.ViewPort;
 import com.github.rinde.rinsim.ui.renderers.ViewRect;
 import com.google.common.base.Optional;
 import org.eclipse.swt.graphics.GC;
+import org.eclipse.swt.graphics.Image;
 
 import javax.annotation.Nullable;
+import java.util.Collection;
+import java.util.Set;
+
+import static com.google.common.base.Preconditions.checkState;
 
 /**
  * Created by bavo en michiel
@@ -63,7 +69,16 @@ public class TaskRenderer implements ModelRenderer{
 
     @Override
     public void renderDynamic(GC gc, ViewPort viewPort, long l) {
+        uiSchema.initialize(gc.getDevice());
 
+        final Collection<Parcel> parcels = pdpModel.get().getParcels(
+                PDPModel.ParcelState.values());
+        final Image image = uiSchema.getImage(Task.class);
+        checkState(image != null);
+
+        synchronized (pdpModel.get()) {
+            final Set<Vehicle> vehicles = pdpModel.get().getVehicles();
+        }
     }
 
     @Nullable

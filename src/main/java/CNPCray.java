@@ -3,6 +3,7 @@ import com.github.rinde.rinsim.core.model.comm.CommModel;
 import com.github.rinde.rinsim.core.model.pdp.DefaultPDPModel;
 import com.github.rinde.rinsim.core.model.pdp.Parcel;
 import com.github.rinde.rinsim.core.model.road.GraphRoadModel;
+import com.github.rinde.rinsim.core.model.road.RoadModel;
 import com.github.rinde.rinsim.geom.*;
 import com.github.rinde.rinsim.ui.View;
 import com.github.rinde.rinsim.ui.renderers.AGVRenderer;
@@ -35,8 +36,9 @@ public class CNPCray {
         int numberOfAgents = 50;
         final DefaultPDPModel pdpModel = DefaultPDPModel.create();
         final CommModel commModel = CommModel.builder().build();
+        final RoadModel roadModel = new GraphRoadModel(createGraph(graphSize, numberOfEmptyConnections));
         final Simulator sim = Simulator.builder()
-                .addModel(new GraphRoadModel(createGraph(graphSize, numberOfEmptyConnections)))
+                .addModel(roadModel)
                 .addModel(pdpModel)
                 .addModel(commModel)
                 .build();
