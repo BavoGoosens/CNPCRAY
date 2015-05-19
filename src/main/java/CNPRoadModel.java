@@ -42,5 +42,16 @@ public class CNPRoadModel extends GraphRoadModel {
         return agents;
     }
 
+    public Collection<BatteryStation> getBatteryStations() {
+        Collection<BatteryStation> stations = new ArrayList<BatteryStation>();
+        for (RoadUser roadUser: this.getObjects()) {
+            if (roadUser instanceof BatteryStation) {
+                BatteryStation station = (BatteryStation) roadUser;
+                stations.add(station);
+            }
+        }
+        return stations;
+    }
+
 
 }

@@ -34,12 +34,14 @@ public class CNPAgent extends Vehicle implements CommUser {
     private BatteryStation batteryStation;
     private Optional<Point> destinationAfterCharging = Optional.absent();
     private long energy;
-    private int charging = -1;
+    private long charging = -1;
+    private long energyBeforeCharging = 0;
+    private long energyToCharge = 0;
 
     private final static double speed = 50.0D;
-    private final static long moveCost = 5;
+    private final static long moveCost = 3;
     private final static long fullEnergy = 30000;
-    private final static int chargingTime = 1000;
+    private final static int chargingFactor = 100;
 
     CNPAgent(RandomGenerator r) {
         this(r, fullEnergy);
@@ -78,7 +80,7 @@ public class CNPAgent extends Vehicle implements CommUser {
 
     @Override
     public void tickImpl(TimeLapse timeLapse) {
-        if (this.charging > 0) {
+        if (this.charging >= 0) {
             this.charging--;
         } else if (this.energy - moveCost >= 0) {
             this.move(timeLapse);
@@ -87,6 +89,10 @@ public class CNPAgent extends Vehicle implements CommUser {
     }
 
     public double getEnergyPercentage() {
+        if (this.charging >= 0) {
+            long alreadyCharged = this.energyToCharge - this.charging*chargingFactor;
+            return Math.round(((double) (this.energyBeforeCharging+alreadyCharged) / fullEnergy)*100);
+        }
         return Math.round(((double) this.energy / fullEnergy)*100);
     }
 
@@ -103,9 +109,11 @@ public class CNPAgent extends Vehicle implements CommUser {
 
         if (roadModel.get().getPosition(this).equals(destination.get())) {
             if (this.batteryStation != null) {
-                this.batteryStation.loadBattery(this);
+                this.energyBeforeCharging = this.energy;
+                long energyLoaded = this.batteryStation.loadBattery(this);
+                this.energyToCharge = energyLoaded;
                 this.batteryStation = null;
-                this.charging = chargingTime;
+                this.charging = Math.round(energyLoaded/chargingFactor);
             }
             this.setNextDestination();
         }
@@ -126,7 +134,7 @@ public class CNPAgent extends Vehicle implements CommUser {
 
     private void setNextDestination() {
         if (this.destinationAfterCharging.isPresent()) {
-            System.out.println("Now going to the previous destination: "+this.destinationAfterCharging.get());
+            System.out.println("Now going to the destination: "+this.destinationAfterCharging.get());
             this.destination = this.destinationAfterCharging;
             this.path = new LinkedList<>(this.roadModel.get().getShortestPathTo(this,
                     this.destination.get()));
@@ -140,7 +148,7 @@ public class CNPAgent extends Vehicle implements CommUser {
             long energyNeeded = (this.path.size()-1)*moveCost*72;
             long energyAfterJob = this.energy - energyNeeded;
             System.out.println("Battery after assignment: "+Math.round((((double) energyAfterJob / fullEnergy)*100))+"%");
-            if (energyAfterJob < 6000) {
+            if (energyAfterJob < 4000) {
                 System.out.println("Charge battery first");
                 this.destinationAfterCharging = this.destination;
                 this.batteryStation = ((CNPRoadModel) this.roadModel.get()).getNearestBatteryStation(this.getPosition().get());

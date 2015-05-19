@@ -81,6 +81,7 @@ public class CNPCray {
                 )
                 .with(new TaskRenderer())
                 .with(new AgentDataRenderer())
+                .with(new BatteryStationDataRenderer())
                 .show();
     }
 

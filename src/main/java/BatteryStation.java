@@ -34,7 +34,7 @@ public class BatteryStation implements CommUser, RoadUser{
         reliability = rng.nextDouble();
     }
 
-    public void loadBattery(CNPAgent agent) {
+    public long loadBattery(CNPAgent agent) {
         if (!agent.getPosition().equals(this.getPosition())) {
             throw new IllegalArgumentException("The battery of agent: "+agent.toString()+" cannot be loaded " +
                     " by this battery station "+this.toString()+" because it is not located here.");
@@ -42,6 +42,7 @@ public class BatteryStation implements CommUser, RoadUser{
         long energyLoaded = agent.loadFullBattery();
         this.energyLoads.add(new EnergyLoad(agent, energyLoaded));
         System.out.println("Charging battery... ("+energyLoaded+" units)");
+        return energyLoaded;
     }
 
     public long getTotalEnergyLoaded() {
@@ -50,6 +51,10 @@ public class BatteryStation implements CommUser, RoadUser{
             totalEnergyLoaded += energyLoad.getEnergyLoaded();
         }
         return totalEnergyLoaded;
+    }
+
+    public int getEnergyLoadCount() {
+        return this.energyLoads.size();
     }
 
     @Override
