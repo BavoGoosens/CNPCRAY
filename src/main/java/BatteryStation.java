@@ -41,6 +41,7 @@ public class BatteryStation implements CommUser, RoadUser{
         }
         long energyLoaded = agent.loadFullBattery();
         this.energyLoads.add(new EnergyLoad(agent, energyLoaded));
+        System.out.println("Charging battery... ("+energyLoaded+" units)");
     }
 
     public long getTotalEnergyLoaded() {

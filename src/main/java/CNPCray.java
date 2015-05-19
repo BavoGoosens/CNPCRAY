@@ -36,7 +36,7 @@ public class CNPCray {
         int numberOfAgents = 1;
         final DefaultPDPModel pdpModel = DefaultPDPModel.create();
         final CommModel commModel = CommModel.builder().build();
-        final RoadModel roadModel = new GraphRoadModel(createGraph(graphSize, numberOfEmptyConnections));
+        final RoadModel roadModel = new CNPRoadModel(createGraph(graphSize, numberOfEmptyConnections));
         final Simulator sim = Simulator.builder()
                 .addModel(roadModel)
                 .addModel(pdpModel)

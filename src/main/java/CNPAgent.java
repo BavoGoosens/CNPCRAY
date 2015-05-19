@@ -25,13 +25,21 @@ public class CNPAgent extends Vehicle implements CommUser {
     private Optional<CommDevice> device;
     private Optional<Point> destination;
     private Queue<Point> path;
+
     private final double range;
     private final double reliability;
     private final RandomGenerator rng;
+
     private long lastReceiveTime = 0;
+    private BatteryStation batteryStation;
+    private Optional<Point> destinationAfterCharging = Optional.absent();
     private long energy;
-    private final static long moveCost = 10;
-    private final static long fullEnergy = 100000;
+    private int charging = -1;
+
+    private final static double speed = 50.0D;
+    private final static long moveCost = 5;
+    private final static long fullEnergy = 30000;
+    private final static int chargingTime = 1000;
 
     CNPAgent(RandomGenerator r) {
         this(r, fullEnergy);
@@ -65,15 +73,21 @@ public class CNPAgent extends Vehicle implements CommUser {
 
     @Override
     public double getSpeed() {
-        return 50.0D;
+        return speed;
     }
 
     @Override
     public void tickImpl(TimeLapse timeLapse) {
-        if (this.energy - moveCost >= 0) {
+        if (this.charging > 0) {
+            this.charging--;
+        } else if (this.energy - moveCost >= 0) {
             this.move(timeLapse);
             this.decreaseEnergyWith(moveCost);
         }
+    }
+
+    public double getEnergyPercentage() {
+        return Math.round(((double) this.energy / fullEnergy)*100);
     }
 
     private void move(TimeLapse timeLapse) {
@@ -84,6 +98,11 @@ public class CNPAgent extends Vehicle implements CommUser {
         roadModel.get().followPath(this, path, timeLapse);
 
         if (roadModel.get().getPosition(this).equals(destination.get())) {
+            if (this.batteryStation != null) {
+                this.batteryStation.loadBattery(this);
+                this.batteryStation = null;
+                this.charging = chargingTime;
+            }
             this.setNextDestination();
         }
     }
@@ -102,14 +121,28 @@ public class CNPAgent extends Vehicle implements CommUser {
     }
 
     private void setNextDestination() {
-        destination = Optional.of(roadModel.get().getRandomPosition(rng));
-        path = new LinkedList<>(roadModel.get().getShortestPathTo(this,
-                destination.get()));
-        long energyNeeded = path.size()*moveCost*72;
-        System.out.println("Energy needed: "+energyNeeded);
-        System.out.println("Battery: "+energy);
-        if (energyNeeded > this.energy) {
-            System.out.println("Find a battery station...");
+        if (this.destinationAfterCharging.isPresent()) {
+            System.out.println("Now going to the previous destination: "+this.destinationAfterCharging.get());
+            this.destination = this.destinationAfterCharging;
+            this.path = new LinkedList<>(this.roadModel.get().getShortestPathTo(this,
+                    this.destination.get()));
+            this.destinationAfterCharging = Optional.absent();
+        } else {
+            this.destination = Optional.of(this.roadModel.get().getRandomPosition(this.rng));
+            this.path = new LinkedList<>(this.roadModel.get().getShortestPathTo(this,
+                    this.destination.get()));
+            System.out.println("New assignment: "+destination.get());
+            System.out.println("Battery: "+this.getEnergyPercentage()+"%");
+            long energyNeeded = (this.path.size()-1)*moveCost*72;
+            long energyAfterJob = this.energy - energyNeeded;
+            System.out.println("Battery after assignment: "+Math.round((((double) energyAfterJob / fullEnergy)*100))+"%");
+            if (energyAfterJob < 6000) {
+                System.out.println("Charge battery first");
+                this.destinationAfterCharging = this.destination;
+                this.batteryStation = ((CNPRoadModel) this.roadModel.get()).getNearestBatteryStation(this.getPosition().get());
+                this.destination = Optional.of(this.batteryStation.getPosition().get());
+                this.path = new LinkedList<>(this.roadModel.get().getShortestPathTo(this, this.destination.get()));
+            }
         }
     }
 
