@@ -60,7 +60,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
     @Override
     public void tick(TimeLapse timeLapse) {
         double toss = rng.nextDouble();
-        if (toss >= 0 && toss <= 0.01){
+        if (toss >= 0 && toss <= 0.002){
             Task t = new Task(this.position, this.roadModel.get().getRandomPosition(rng), 10);
             this.pdpmodel.get().register(t);
             this.roadModel.get().addObjectAt(t, this.position);
