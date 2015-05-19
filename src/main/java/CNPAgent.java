@@ -90,6 +90,10 @@ public class CNPAgent extends Vehicle implements CommUser {
         return Math.round(((double) this.energy / fullEnergy)*100);
     }
 
+    public Optional<Point> getDestination() {
+        return this.destination;
+    }
+
     private void move(TimeLapse timeLapse) {
         if (!destination.isPresent()) {
             this.setNextDestination();

@@ -4,9 +4,7 @@ import com.github.rinde.rinsim.geom.ConnectionData;
 import com.github.rinde.rinsim.geom.Graph;
 import com.github.rinde.rinsim.geom.Point;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by parallels on 5/19/15.
@@ -31,6 +29,17 @@ public class CNPRoadModel extends GraphRoadModel {
             }
         }
         return bestBatteryStation;
+    }
+
+    public Collection<CNPAgent> getAgents() {
+        Collection<CNPAgent> agents = new ArrayList<CNPAgent>();
+        for (RoadUser roadUser: this.getObjects()) {
+            if (roadUser instanceof CNPAgent) {
+                CNPAgent cnpAgent = (CNPAgent) roadUser;
+                agents.add(cnpAgent);
+            }
+        }
+        return agents;
     }
 
 

@@ -80,6 +80,7 @@ public class CNPCray {
                                 .showReliabilityColors()
                 )
                 .with(new TaskRenderer())
+                .with(new AgentDataRenderer())
                 .show();
     }
 
