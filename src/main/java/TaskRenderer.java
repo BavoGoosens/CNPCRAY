@@ -77,7 +77,20 @@ public class TaskRenderer implements ModelRenderer{
         checkState(image != null);
 
         synchronized (pdpModel.get()) {
-            final Set<Vehicle> vehicles = pdpModel.get().getVehicles();
+            for (final Parcel p : parcels) {
+                float rotation = AT_SITE_ROTATION;
+                int offsetX = 0;
+                int offsetY = 0;
+                @Nullable
+                final Point pos = roadModel.get().getPosition(p);
+                final int x = viewPort.toCoordX(pos.x);
+                final int y = viewPort.toCoordY(pos.y);
+                offsetX = (int) img.atSiteOffset.x + x - image.getBounds().width / 2;
+                offsetY = (int) img.atSiteOffset.y + y - image.getBounds().height / 2;
+
+
+                gc.drawImage(image, offsetX, offsetY);
+            }
         }
     }
 

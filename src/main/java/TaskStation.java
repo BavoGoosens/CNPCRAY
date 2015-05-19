@@ -1,6 +1,9 @@
+import com.github.rinde.rinsim.core.TickListener;
+import com.github.rinde.rinsim.core.TimeLapse;
 import com.github.rinde.rinsim.core.model.comm.CommDevice;
 import com.github.rinde.rinsim.core.model.comm.CommDeviceBuilder;
 import com.github.rinde.rinsim.core.model.comm.CommUser;
+import com.github.rinde.rinsim.core.model.pdp.PDPModel;
 import com.github.rinde.rinsim.core.model.road.GraphRoadModel;
 import com.github.rinde.rinsim.core.model.road.RoadModel;
 import com.github.rinde.rinsim.core.model.road.RoadUser;
@@ -11,19 +14,21 @@ import org.apache.commons.math3.random.RandomGenerator;
 /**
  * Created by bavo and michiel.
  */
-public class TaskStation implements CommUser, RoadUser {
+public class TaskStation implements CommUser, RoadUser, TickListener {
 
-    private Optional<GraphRoadModel> roadModel;
+    private Optional<RoadModel> roadModel;
+    private Optional<PDPModel> pdpmodel;
     private final RandomGenerator rng;
     private Optional<CommDevice> device;
     private final double range;
     private final double reliability;
     private final Point position;
 
-    public TaskStation(RandomGenerator rng, Point point){
+    public TaskStation(RandomGenerator rng, Point point, PDPModel pdpModel, RoadModel roadModel){
+        this.pdpmodel = Optional.of(pdpModel);
         this.position = point;
         this.rng = rng;
-        roadModel = Optional.absent();
+        this.roadModel = Optional.of(roadModel);
         device = Optional.absent();
         range = rng.nextDouble();
         reliability = rng.nextDouble();
@@ -45,10 +50,25 @@ public class TaskStation implements CommUser, RoadUser {
 
     @Override
     public void initRoadUser(RoadModel roadModel) {
-        this.roadModel = Optional.of((GraphRoadModel) roadModel);
+        this.roadModel = Optional.of((RoadModel) roadModel);
         Point p;
         /*while (roadModel.get().isOccupied(p = model.getRandomPosition(rng))) {}*/
         p = roadModel.getRandomPosition(rng);
         this.roadModel.get().addObjectAt(this, this.position);
+    }
+
+    @Override
+    public void tick(TimeLapse timeLapse) {
+        double toss = rng.nextDouble();
+        if (toss >= 0 && toss <= 0.01){
+            Task t = new Task(this.position, this.roadModel.get().getRandomPosition(rng), 10);
+            this.pdpmodel.get().register(t);
+            this.roadModel.get().addObjectAt(t, this.position);
+        }
+    }
+
+    @Override
+    public void afterTick(TimeLapse timeLapse) {
+
     }
 }
