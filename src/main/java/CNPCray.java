@@ -1,15 +1,21 @@
 import com.github.rinde.rinsim.core.Simulator;
+import com.github.rinde.rinsim.core.model.comm.CommModel;
+import com.github.rinde.rinsim.core.model.pdp.DefaultPDPModel;
 import com.github.rinde.rinsim.core.model.road.GraphRoadModel;
 import com.github.rinde.rinsim.geom.*;
 import com.github.rinde.rinsim.ui.View;
 import com.github.rinde.rinsim.ui.renderers.AGVRenderer;
+import com.github.rinde.rinsim.ui.renderers.CommRenderer;
 import com.github.rinde.rinsim.ui.renderers.GraphRoadModelRenderer;
 import com.github.rinde.rinsim.ui.renderers.RoadUserRenderer;
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
+import org.eclipse.swt.graphics.RGB;
 
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.Random;
 
 import static com.google.common.collect.Lists.newArrayList;
 
@@ -23,87 +29,79 @@ public class CNPCray {
      * @param args - No args.
      */
     public static void main(String[] args) {
-
+        int graphSize = 30;
+        int numberOfEmptyConnections = 15;
+        int numberOfAgents = 50;
+        final DefaultPDPModel pdpModel = DefaultPDPModel.create();
+        final CommModel commModel = CommModel.builder().build();
         final Simulator sim = Simulator.builder()
-                .addModel(new GraphRoadModel(createGraph()))
+                .addModel(new GraphRoadModel(createGraph(graphSize, numberOfEmptyConnections)))
+                .addModel(pdpModel)
+                .addModel(commModel)
                 .build();
 
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < numberOfAgents; i++) {
             sim.register(new CNPAgent(sim.getRandomGenerator()));
         }
+
+        sim.register(new BatteryStation(sim.getRandomGenerator(), new Point(0, 15)));
+        sim.register(new BatteryStation(sim.getRandomGenerator(), new Point(15, 0)));
+        sim.register(new BatteryStation(sim.getRandomGenerator(), new Point(29, 15)));
+        sim.register(new BatteryStation(sim.getRandomGenerator(), new Point(15, 29)));
+        sim.register(new TaskStation(sim.getRandomGenerator(), new Point(0,0)));
+        sim.register(new TaskStation(sim.getRandomGenerator(), new Point(0,29)));
+        sim.register(new TaskStation(sim.getRandomGenerator(), new Point(29, 0)));
+        sim.register(new TaskStation(sim.getRandomGenerator(), new Point(29, 29)));
+
 
         View.create(sim)
                 .with(GraphRoadModelRenderer.builder()
                 )
                 .with(RoadUserRenderer.builder()
+                                .addColorAssociation(BatteryStation.class, new RGB(0, 255, 0))
+                                .addColorAssociation(CNPAgent.class, new RGB(255,0 , 0))
+                                .addColorAssociation(TaskStation.class, new RGB(0,0,255))
+                )
+                .with(CommRenderer.builder()
+                                .showReliabilityColors()
                 )
                 .show();
     }
 
-    static ImmutableTable<Integer, Integer, Point> createMatrix(int cols,
-                                                                int rows, Point offset) {
+    static ImmutableTable<Integer, Integer, Point> createMatrix(int cols, int rows) {
         final ImmutableTable.Builder<Integer, Integer, Point> builder = ImmutableTable
                 .builder();
         for (int c = 0; c < cols; c++) {
             for (int r = 0; r < rows; r++) {
-                builder.put(r, c, new Point(
-                        offset.x + c * VEHICLE_LENGTH * 2,
-                        offset.y + r * VEHICLE_LENGTH * 2));
+                builder.put(r, c, new Point(c,r));
             }
         }
         return builder.build();
     }
 
-    static ListenableGraph<LengthData> createSimpleGraph() {
+    static ListenableGraph<LengthData> createGraph(int size, int numberOfEmptyConnections) {
         final Graph<LengthData> g = new TableGraph<>();
+        final Table<Integer, Integer, Point> matrix = createMatrix(size, size);
+        ArrayList<Integer> emptyConnections = generateEmptyConnections(size, numberOfEmptyConnections);
 
-        final Table<Integer, Integer, Point> matrix = createMatrix(8, 6,
-                new Point(0, 0));
-
-        for (int i = 0; i < matrix.columnMap().size(); i++) {
-
-            Iterable<Point> path;
-            if (i % 2 == 0) {
-                path = Lists.reverse(newArrayList(matrix.column(i).values()));
-            } else {
-                path = matrix.column(i).values();
+        for (int i = 0; i < size; i++) {
+            if (!emptyConnections.contains(i)) {
+                Iterable<Point> pathCol = matrix.column(i).values();
+                Iterable<Point> pathRow = matrix.row(i).values();
+                Graphs.addBiPath(g, pathCol);
+                Graphs.addBiPath(g, pathRow);
             }
-            Graphs.addPath(g, path);
         }
-
-        Graphs.addPath(g, matrix.row(0).values());
-        Graphs.addPath(g, Lists.reverse(newArrayList(matrix.row(
-                matrix.rowKeySet().size() - 1).values())));
 
         return new ListenableGraph<>(g);
     }
 
-    static ListenableGraph<LengthData> createGraph() {
-        final Graph<LengthData> g = new TableGraph<>();
-
-        final Table<Integer, Integer, Point> matrix = createMatrix(5, 10,
-                new Point(0, 0));
-        for (final Map<Integer, Point> column : matrix.columnMap().values()) {
-            Graphs.addBiPath(g, column.values());
+    private static ArrayList<Integer> generateEmptyConnections(int n, int count) {
+        Random random = new Random();
+        ArrayList<Integer> emptyConnections = new ArrayList<Integer>();
+        for (int i = 0; i < count; i++) {
+            emptyConnections.add(random.nextInt(n));
         }
-        /*for (final Map<Integer, Point> row : matrix.rowMap().values()) {
-            Graphs.addBiPath(g, row.values());
-        }*/
-        Graphs.addBiPath(g, matrix.row(4).values());
-        Graphs.addBiPath(g, matrix.row(5).values());
-
-        final Table<Integer, Integer, Point> matrix2 = createMatrix(10, 7,
-                new Point(30, 6));
-        for (final Map<Integer, Point> row : matrix2.rowMap().values()) {
-            Graphs.addBiPath(g, row.values());
-        }
-        Graphs.addBiPath(g, matrix2.column(0).values());
-        Graphs.addBiPath(g, matrix2.column(matrix2.columnKeySet().size() -
-                1).values());
-
-        Graphs.addPath(g, matrix2.get(2, 0), matrix.get(4, 4));
-        Graphs.addPath(g, matrix.get(5, 4), matrix2.get(4, 0));
-
-        return new ListenableGraph<>(g);
+        return emptyConnections;
     }
 }
