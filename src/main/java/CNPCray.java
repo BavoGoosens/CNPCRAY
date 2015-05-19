@@ -86,6 +86,9 @@ public class CNPCray {
         for (final Map<Integer, Point> column : matrix.columnMap().values()) {
             Graphs.addBiPath(g, column.values());
         }
+        /*for (final Map<Integer, Point> row : matrix.rowMap().values()) {
+            Graphs.addBiPath(g, row.values());
+        }*/
         Graphs.addBiPath(g, matrix.row(4).values());
         Graphs.addBiPath(g, matrix.row(5).values());
 
