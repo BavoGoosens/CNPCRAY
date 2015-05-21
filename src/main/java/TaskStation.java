@@ -1,15 +1,13 @@
 import com.github.rinde.rinsim.core.TickListener;
 import com.github.rinde.rinsim.core.TimeLapse;
-import com.github.rinde.rinsim.core.model.comm.CommDevice;
-import com.github.rinde.rinsim.core.model.comm.CommDeviceBuilder;
-import com.github.rinde.rinsim.core.model.comm.CommUser;
-import com.github.rinde.rinsim.core.model.comm.MessageContents;
+import com.github.rinde.rinsim.core.model.comm.*;
 import com.github.rinde.rinsim.core.model.pdp.PDPModel;
 import com.github.rinde.rinsim.core.model.road.GraphRoadModel;
 import com.github.rinde.rinsim.core.model.road.RoadModel;
 import com.github.rinde.rinsim.core.model.road.RoadUser;
 import com.github.rinde.rinsim.geom.Point;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import org.apache.commons.math3.random.RandomGenerator;
 
 /**
@@ -65,8 +63,18 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
             Task t = new Task(this.position, this.roadModel.get().getRandomPosition(rng), 10);
             this.pdpmodel.get().register(t);
             this.roadModel.get().addObjectAt(t, this.position);
-            this.device.get().broadcast(TaskMessages.TASK_READY);
+            this.device.get().broadcast(TaskMessages.TASK_READY );
         }
+        // Response from workers => choose best one if offer
+        if (this.device.get().getUnreadCount() > 0){
+            ImmutableList<Message> answers = this.device.get().getUnreadMessages();
+            for(Message m : answers){
+                System.out.println(m.getContents());
+            }
+        }
+        // if there are tasks left and there is no response in the given timeframe
+        // rebroadcast
+
     }
 
     @Override
