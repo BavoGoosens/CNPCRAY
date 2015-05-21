@@ -50,13 +50,6 @@ public class CNPCray {
             sim.register(new CNPAgent(sim.getRandomGenerator()));
         }
 
-        /*for (int i = 0; i < 5; i++){
-            Point origin = roadModel.getRandomPosition(rng);
-            Point destination = roadModel.getRandomPosition(rng);
-            sim.register(new Task(origin, destination, 10));
-        }
-        */
-        //sim.register(new Task(new Point(0,0), new Point(29, 29), 10));
         sim.register(new BatteryStation(sim.getRandomGenerator(), new Point(0, 15)));
         sim.register(new BatteryStation(sim.getRandomGenerator(), new Point(15, 0)));
         sim.register(new BatteryStation(sim.getRandomGenerator(), new Point(29, 15)));
@@ -77,7 +70,8 @@ public class CNPCray {
                                 .addColorAssociation(Task.class, new RGB(160, 148, 255))
                 )
                 .with(CommRenderer.builder()
-                                .showReliabilityColors()
+                        .showReliabilityColors()
+                        .showMessageCount()
                 )
                 .with(new TaskRenderer())
                 .with(new AgentDataRenderer())

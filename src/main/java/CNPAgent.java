@@ -3,6 +3,7 @@ import com.github.rinde.rinsim.core.TimeLapse;
 import com.github.rinde.rinsim.core.model.comm.CommDevice;
 import com.github.rinde.rinsim.core.model.comm.CommDeviceBuilder;
 import com.github.rinde.rinsim.core.model.comm.CommUser;
+import com.github.rinde.rinsim.core.model.comm.Message;
 import com.github.rinde.rinsim.core.model.pdp.PDPModel;
 import com.github.rinde.rinsim.core.model.pdp.Vehicle;
 import com.github.rinde.rinsim.core.model.road.GraphRoadModel;
@@ -10,6 +11,7 @@ import com.github.rinde.rinsim.core.model.road.MovingRoadUser;
 import com.github.rinde.rinsim.core.model.road.RoadModel;
 import com.github.rinde.rinsim.geom.Point;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import org.apache.commons.math3.random.RandomGenerator;
 
 import java.util.LinkedList;
@@ -85,6 +87,10 @@ public class CNPAgent extends Vehicle implements CommUser {
         } else if (this.energy - moveCost >= 0) {
             this.move(timeLapse);
             this.decreaseEnergyWith(moveCost);
+        }
+        if (this.device.get().getUnreadCount() > 0){
+            this.device.get().getUnreadMessages();
+            this.device.get().broadcast(TaskStation.TaskMessages.TASK_OFFER);
         }
     }
 

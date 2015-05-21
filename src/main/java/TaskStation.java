@@ -3,6 +3,7 @@ import com.github.rinde.rinsim.core.TimeLapse;
 import com.github.rinde.rinsim.core.model.comm.CommDevice;
 import com.github.rinde.rinsim.core.model.comm.CommDeviceBuilder;
 import com.github.rinde.rinsim.core.model.comm.CommUser;
+import com.github.rinde.rinsim.core.model.comm.MessageContents;
 import com.github.rinde.rinsim.core.model.pdp.PDPModel;
 import com.github.rinde.rinsim.core.model.road.GraphRoadModel;
 import com.github.rinde.rinsim.core.model.road.RoadModel;
@@ -64,11 +65,16 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
             Task t = new Task(this.position, this.roadModel.get().getRandomPosition(rng), 10);
             this.pdpmodel.get().register(t);
             this.roadModel.get().addObjectAt(t, this.position);
+            this.device.get().broadcast(TaskMessages.TASK_READY);
         }
     }
 
     @Override
     public void afterTick(TimeLapse timeLapse) {
 
+    }
+
+    enum TaskMessages implements MessageContents {
+        NICE_TO_MEET_YOU, WHERE_IS_EVERYBODY, TASK_READY, TASK_ASSIGNED, TASK_OFFER ;
     }
 }
