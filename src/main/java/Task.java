@@ -15,9 +15,11 @@ public class Task extends Parcel {
 
     private final Point origin;
     private CNPAgent agent = null;
+    private TaskStation taskStation;
 
-    public Task(Point origin, Point destination, long pickupDuration) {
+    public Task(Point origin, Point destination, long pickupDuration, TaskStation orderingTaskStation) {
         super(destination, pickupDuration, TimeWindow.ALWAYS, pickupDuration, TimeWindow.ALWAYS, 1);
+        this.taskStation = orderingTaskStation;
         this.origin = origin;
     }
 
@@ -27,6 +29,10 @@ public class Task extends Parcel {
 
     public CNPAgent getAgent() {
         return this.agent;
+    }
+
+    public TaskStation getTaskStation() {
+        return this.taskStation;
     }
 
     public void pickUp(CNPAgent agent) {

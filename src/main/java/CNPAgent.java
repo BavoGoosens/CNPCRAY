@@ -97,7 +97,7 @@ public class CNPAgent extends Vehicle implements CommUser {
             this.move(timeLapse);
             this.decreaseEnergyWith(moveCost);
         }
-        if (this.batteryStation == null && this.device.get().getUnreadCount() > 0){
+        if (!this.assignedTask.isPresent() && !this.carryingTask.isPresent() && this.batteryStation == null && this.device.get().getUnreadCount() > 0){
             ImmutableList<Message> received = this.device.get().getUnreadMessages();
             for (Message m : received){
                 CommUser sender = m.getSender();
@@ -153,6 +153,7 @@ public class CNPAgent extends Vehicle implements CommUser {
             } else if (this.carryingTask.isPresent()) {
                 this.carryingTask.get().drop();
                 this.carryingTask = Optional.absent();
+                this.setNextDestination(null);
             } else {
                 this.setNextDestination(null);
             }

@@ -71,7 +71,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
         if (toss >= 0 && toss <= 0.002){
             //RandomLy generate new Tasks
             Point ori =this.roadModel.get().getRandomPosition(rng);
-            Task t = new Task(ori, this.position, 10);
+            Task t = new Task(ori, this.position, 10, this);
             this.stillToBeAssignedTasks.add(t);
             this.pdpmodel.get().register(t);
             this.roadModel.get().register(t);
