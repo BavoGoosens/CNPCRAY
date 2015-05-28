@@ -50,7 +50,7 @@ public class AgentDataRenderer implements ModelRenderer{
             final int x = viewPort.toCoordX(pos.x);
             final int y = viewPort.toCoordY(pos.y);
             offsetX = x + 0;
-            offsetY = y + 5;
+            offsetY = y + 10;
             gc.drawText(cnpAgent.getEnergyPercentage()+"%", offsetX, offsetY, true);
             if (cnpAgent.getDestination().isPresent()) {
                 offsetX = x + 0;
