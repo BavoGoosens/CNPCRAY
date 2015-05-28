@@ -10,7 +10,9 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.math3.random.RandomGenerator;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * Created by bavo and michiel.
@@ -26,7 +28,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
     long lastReceiveTime = 0;
     private double broadcastThreshold = 5000;
     private final Point position;
-    private HashMap<String, Task> stillToBeAssignedTasks = new HashMap();
+    private List<Task> stillToBeAssignedTasks = new ArrayList<Task>();
 
     public TaskStation(RandomGenerator rng, Point point, PDPModel pdpModel, RoadModel roadModel){
         this.pdpmodel = Optional.of(pdpModel);
@@ -67,7 +69,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
         if (toss >= 0 && toss <= 0.002){
             //RandomLy generate new Tasks
             Task t = new Task(this.position, this.roadModel.get().getRandomPosition(rng), 10);
-            this.stillToBeAssignedTasks.put(t.toString(), t);
+            this.stillToBeAssignedTasks.add(t);
             this.pdpmodel.get().register(t);
             this.roadModel.get().addObjectAt(t, this.position);
             this.device.get().broadcast(TaskMessages.TASK_READY );
@@ -76,14 +78,9 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
         if (this.device.get().getUnreadCount() > 0){
             lastReceiveTime = timeLapse.getStartTime();
             ImmutableList<Message> answers = this.device.get().getUnreadMessages();
-            for(Message m : answers){
-                System.out.println(m.getContents());
-            }
-        }  else if (lastReceiveTime > broadcastThreshold){
-            // If there has been no response in a while rebroadcast all the outstanding Tasks
-            for (Task t : this.stillToBeAssignedTasks.values()){
-                this.device.get().broadcast(TaskMessages.TASK_READY);
-            }
+            int index = rng.nextInt(answers.size());
+            Message answer = answers.get(index);
+            this.assignNewTask((CNPAgent) answer.getSender());
         }
         // if there are tasks left and there is no response in the given timeframe
         // rebroadcast
@@ -93,6 +90,14 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
     @Override
     public void afterTick(TimeLapse timeLapse) {
 
+    }
+
+    private void assignNewTask(CNPAgent cnpAgent) {
+        if (this.stillToBeAssignedTasks.size() > 0) {
+            Task task = this.stillToBeAssignedTasks.get(0);
+            cnpAgent.assignTask(task);
+            this.stillToBeAssignedTasks.remove(0);
+        }
     }
 
     enum TaskMessages implements MessageContents {

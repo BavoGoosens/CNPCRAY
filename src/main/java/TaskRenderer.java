@@ -83,7 +83,13 @@ public class TaskRenderer implements ModelRenderer{
                 int offsetX = 0;
                 int offsetY = 0;
                 @Nullable
-                final Point pos = roadModel.get().getPosition(p);
+                Task task = (Task) p;
+                final Point pos;
+                if (task.isAssigned()) {
+                    pos = roadModel.get().getPosition(task.getAgent());
+                } else {
+                    pos = roadModel.get().getPosition(p);
+                }
                 final int x = viewPort.toCoordX(pos.x);
                 final int y = viewPort.toCoordY(pos.y);
                 offsetX = (int) img.atSiteOffset.x + x - image.getBounds().width / 2;
