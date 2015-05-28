@@ -92,11 +92,14 @@ public class CNPAgent extends Vehicle implements CommUser {
             ImmutableList<Message> received = this.device.get().getUnreadMessages();
             for (Message m : received){
                 CommUser sender = m.getSender();
-                //TaskStation task = (TaskStation) sender;
-                //Point taskpos = this.roadModel.get().getPosition(task);
-                //this.setNextDestination(taskpos);
+                if (sender.getClass().equals(TaskStation.class)){
+                    TaskStation task = (TaskStation) sender;
+                    Point taskpos = this.roadModel.get().getPosition(task);
+                    this.setNextDestination(taskpos);
+                    this.device.get().broadcast(TaskStation.TaskMessages.TASK_OFFER);
+                }
             }
-            this.device.get().broadcast(TaskStation.TaskMessages.TASK_OFFER);
+
         }
     }
 
@@ -147,6 +150,7 @@ public class CNPAgent extends Vehicle implements CommUser {
     private void setNextDestination( Point destiny) {
         if (destiny != null){
             System.out.println("Now going to the destination: " + destiny);
+            this.destination = Optional.of(destiny);
             this.path = new LinkedList<>(this.roadModel.get().getShortestPathTo(this,
                     destiny));
         }else {
