@@ -200,7 +200,7 @@ public class CNPAgent extends Vehicle implements CommUser {
     private boolean inRange(Point p) {
         Point position = this.getPosition().get();
         double distance = Math.sqrt(Math.pow(position.x - p.x, 2) + Math.pow(position.y - p.y, 2));
-        return distance < range;
+        return distance < range*2;
     }
 
     public void declareTaskManager(Task task) {
