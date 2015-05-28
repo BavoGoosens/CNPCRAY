@@ -74,7 +74,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
             Task t = new Task(ori, this.position, 10);
             this.stillToBeAssignedTasks.add(t);
             this.pdpmodel.get().register(t);
-            this.roadModel.get().addObjectAt(t, ori);
+            this.roadModel.get().register(t);
             this.device.get().broadcast(TaskMessages.TASK_READY );
         }
         // Response from workers => choose best one if offer
@@ -83,7 +83,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
             ImmutableList<Message> answers = this.device.get().getUnreadMessages();
             int index = rng.nextInt(answers.size());
             Message answer = answers.get(index);
-            this.declareTaskManager((CNPAgent) answer.getSender());
+            this.assignTask((CNPAgent) answer.getSender());
         }
         // if there are tasks left and there is no response in the given timeframe
         // rebroadcast
@@ -103,6 +103,13 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
             }
         }
         return bidders.size();
+    }
+
+    private void assignTask(CNPAgent agent) {
+        if (this.stillToBeAssignedTasks.size() > 0) {
+            Task task = this.stillToBeAssignedTasks.get(0);
+            agent.assignTask(task);
+        }
     }
 
     private void declareTaskManager(CNPAgent agent) {

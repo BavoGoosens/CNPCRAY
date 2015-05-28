@@ -3,11 +3,15 @@ import com.github.rinde.rinsim.core.model.pdp.Parcel;
 import com.github.rinde.rinsim.core.model.road.RoadModel;
 import com.github.rinde.rinsim.geom.Point;
 import com.github.rinde.rinsim.util.TimeWindow;
+import com.google.common.base.Optional;
 
 /**
  * Created by bavo en michiel.
  */
 public class Task extends Parcel {
+
+    private Optional<RoadModel> roadModel;
+    private Optional<PDPModel> pdpModel;
 
     private final Point origin;
     private CNPAgent agent = null;
@@ -25,8 +29,12 @@ public class Task extends Parcel {
         return this.agent;
     }
 
-    public void setAgent(CNPAgent agent) {
+    public void pickUp(CNPAgent agent) {
         this.agent = agent;
+    }
+
+    public void drop() {
+        this.agent = null;
     }
 
     public boolean isAssigned() {
@@ -35,6 +43,8 @@ public class Task extends Parcel {
 
     @Override
     public void initRoadPDP(RoadModel roadModel, PDPModel pdpModel) {
+        this.roadModel = Optional.of(roadModel);
+        this.pdpModel = Optional.of(pdpModel);
         roadModel.addObjectAt(this, origin);
     }
 }

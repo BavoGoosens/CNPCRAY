@@ -40,6 +40,7 @@ public class CNPAgent extends Vehicle implements CommUser {
     private TaskStation taskStation;
     private Optional<Point> destinationAfterCharging = Optional.absent();
     private Optional<Task> assignedTask = Optional.absent();
+    private Optional<Task> carryingTask = Optional.absent();
     private Optional<Task> taskToBeAssigned = Optional.absent();
     private List<Task> completedTasks = new ArrayList<Task>();
 
@@ -143,11 +144,19 @@ public class CNPAgent extends Vehicle implements CommUser {
                 this.energyToCharge = energyLoaded;
                 this.batteryStation = null;
                 this.charging = Math.round(energyLoaded/chargingFactor);
+                this.setNextDestination(null);
             } else if (this.assignedTask.isPresent()) {
-                this.completedTasks.add(this.assignedTask.get());
+                this.carryingTask = this.assignedTask;
                 this.assignedTask = Optional.absent();
+                this.carryingTask.get().pickUp(this);
+                this.setNextDestination(this.carryingTask.get().getDestination());
+            } else if (this.carryingTask.isPresent()) {
+                this.carryingTask.get().drop();
+                this.carryingTask = Optional.absent();
+            } else {
+                this.setNextDestination(null);
             }
-            this.setNextDestination(null);
+
         }
     }
 
@@ -209,9 +218,8 @@ public class CNPAgent extends Vehicle implements CommUser {
     }
 
     public void assignTask(Task task) {
-        task.setAgent(this);
         this.assignedTask = Optional.of(task);
-        this.setNextDestination(task.getDestination());
+        this.setNextDestination(task.getPosition());
     }
 
     @Override
