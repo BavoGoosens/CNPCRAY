@@ -2,7 +2,6 @@ import com.github.rinde.rinsim.core.TickListener;
 import com.github.rinde.rinsim.core.TimeLapse;
 import com.github.rinde.rinsim.core.model.comm.*;
 import com.github.rinde.rinsim.core.model.pdp.PDPModel;
-import com.github.rinde.rinsim.core.model.road.GraphRoadModel;
 import com.github.rinde.rinsim.core.model.road.RoadModel;
 import com.github.rinde.rinsim.core.model.road.RoadUser;
 import com.github.rinde.rinsim.geom.Point;
@@ -11,7 +10,6 @@ import com.google.common.collect.ImmutableList;
 import org.apache.commons.math3.random.RandomGenerator;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -25,8 +23,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
     private Optional<CommDevice> device;
     private final double range;
     private final double reliability;
-    long lastReceiveTime = 0;
-    private double broadcastThreshold = 5000;
+    private double retransmission = 100;
     private final Point position;
     private List<Task> stillToBeAssignedTasks = new ArrayList<Task>();
 
@@ -67,6 +64,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
 
     @Override
     public void tick(TimeLapse timeLapse) {
+        this.retransmission -= 1;
         double toss = rng.nextDouble();
         if (toss >= 0 && toss <= 0.001){
             //RandomLy generate new Tasks
@@ -79,19 +77,22 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
         }
         // Response from workers => choose best one if offer
         if (this.device.get().getUnreadCount() > 0){
-            lastReceiveTime = timeLapse.getStartTime();
             ImmutableList<Message> answers = this.device.get().getUnreadMessages();
-            int index = rng.nextInt(answers.size());
-            Message answer = answers.get(index);
-            this.assignTask((CNPAgent) answer.getSender());
+            for (Message m: answers){
+                if (! stillToBeAssignedTasks.isEmpty()){
+                    this.assignTask((CNPAgent) m.getSender());
+                }
+            }
         }
         // if there are tasks left and there is no response in the given timeframe
         // rebroadcast
-        /*if (this.lastReceiveTime > this.broadcastThreshold){
+        if (this.retransmission <= 0){
+            this.retransmission = 100;
+            System.out.println("retransmitting");
             for(Task t : stillToBeAssignedTasks){
                 this.device.get().broadcast(TaskMessages.TASK_READY);
             }
-        }*/
+        }
 
     }
 

@@ -178,7 +178,7 @@ public class CNPAgent extends Vehicle implements CommUser {
     }
 
     private void setNextDestination( Point destiny) {
-        if (destiny != null){
+        if (destiny != null && this.batteryStation != null){
             System.out.println("Now going to the destination: " + destiny);
             this.destination = Optional.of(destiny);
             this.path = new LinkedList<>(this.roadModel.get().getShortestPathTo(this,
