@@ -14,7 +14,10 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.math3.random.RandomGenerator;
 
+import javax.swing.text.html.Option;
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 
 /**
@@ -34,7 +37,11 @@ public class CNPAgent extends Vehicle implements CommUser {
 
     private long lastReceiveTime = 0;
     private BatteryStation batteryStation;
+    private TaskStation taskStation;
     private Optional<Point> destinationAfterCharging = Optional.absent();
+    private Optional<Task> assignedTask = Optional.absent();
+    private List<Task> completedTasks = new ArrayList<Task>();
+
     private long energy;
     private long charging = -1;
     private long energyBeforeCharging = 0;
@@ -96,6 +103,7 @@ public class CNPAgent extends Vehicle implements CommUser {
                     TaskStation task = (TaskStation) sender;
                     Point taskpos = this.roadModel.get().getPosition(task);
                     this.setNextDestination(taskpos);
+                    this.taskStation = task;
                     this.device.get().broadcast(TaskStation.TaskMessages.TASK_OFFER);
                 }
             }
@@ -121,6 +129,9 @@ public class CNPAgent extends Vehicle implements CommUser {
         }
 
         roadModel.get().followPath(this, path, timeLapse);
+        if (this.assignedTask.isPresent()) {
+            //this.roadModel.get().moveTo(assignedTask.get(), this.getPosition().get(), timeLapse);
+        }
 
         if (roadModel.get().getPosition(this).equals(destination.get())) {
             if (this.batteryStation != null) {
@@ -129,6 +140,12 @@ public class CNPAgent extends Vehicle implements CommUser {
                 this.energyToCharge = energyLoaded;
                 this.batteryStation = null;
                 this.charging = Math.round(energyLoaded/chargingFactor);
+            } else if (this.taskStation != null) {
+                this.device.get().send(TaskStation.TaskMessages.TASK_OFFER, this.taskStation);
+                this.taskStation = null;
+            } else if (this.assignedTask.isPresent()) {
+                this.completedTasks.add(this.assignedTask.get());
+                this.assignedTask = Optional.absent();
             }
             this.setNextDestination(null);
         }
@@ -164,20 +181,26 @@ public class CNPAgent extends Vehicle implements CommUser {
                 this.destination = Optional.of(this.roadModel.get().getRandomPosition(this.rng));
                 this.path = new LinkedList<>(this.roadModel.get().getShortestPathTo(this,
                         this.destination.get()));
-                System.out.println("New assignment: " + destination.get());
-                System.out.println("Battery: " + this.getEnergyPercentage() + "%");
-                long energyNeeded = (this.path.size() - 1) * moveCost * 72;
-                long energyAfterJob = this.energy - energyNeeded;
-                System.out.println("Battery after assignment: " + Math.round((((double) energyAfterJob / fullEnergy) * 100)) + "%");
-                if (energyAfterJob < 4000) {
-                    System.out.println("Charge battery first");
-                    this.destinationAfterCharging = this.destination;
-                    this.batteryStation = ((CNPRoadModel) this.roadModel.get()).getNearestBatteryStation(this.getPosition().get());
-                    this.destination = Optional.of(this.batteryStation.getPosition().get());
-                    this.path = new LinkedList<>(this.roadModel.get().getShortestPathTo(this, this.destination.get()));
-                }
             }
         }
+        System.out.println("New assignment: " + destination.get());
+        System.out.println("Battery: " + this.getEnergyPercentage() + "%");
+        long energyNeeded = (this.path.size() - 1) * moveCost * 72;
+        long energyAfterJob = this.energy - energyNeeded;
+        System.out.println("Battery after assignment: " + Math.round((((double) energyAfterJob / fullEnergy) * 100)) + "%");
+        if (energyAfterJob < 4000) {
+            System.out.println("Charge battery first");
+            this.destinationAfterCharging = this.destination;
+            this.batteryStation = ((CNPRoadModel) this.roadModel.get()).getNearestBatteryStation(this.getPosition().get());
+            this.destination = Optional.of(this.batteryStation.getPosition().get());
+            this.path = new LinkedList<>(this.roadModel.get().getShortestPathTo(this, this.destination.get()));
+        }
+    }
+
+    public void assignTask(Task task) {
+        task.setAgent(this);
+        this.assignedTask = Optional.of(task);
+        this.setNextDestination(task.getDestination());
     }
 
     @Override

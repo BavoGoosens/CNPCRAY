@@ -10,7 +10,9 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.math3.random.RandomGenerator;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * Created by bavo and michiel.
@@ -25,7 +27,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
     private final double reliability;
     private double broadcastDelay;
     private final Point position;
-    private HashMap<String, Task> stillToBeAssignedTasks = new HashMap();
+    private List<Task> stillToBeAssignedTasks = new ArrayList<Task>();
 
     public TaskStation(RandomGenerator rng, Point point, PDPModel pdpModel, RoadModel roadModel){
         this.pdpmodel = Optional.of(pdpModel);
@@ -65,7 +67,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
         double toss = rng.nextDouble();
         if (toss >= 0 && toss <= 0.002){
             Task t = new Task(this.position, this.roadModel.get().getRandomPosition(rng), 10);
-            this.stillToBeAssignedTasks.put(t.toString(), t);
+            this.stillToBeAssignedTasks.add(t);
             this.pdpmodel.get().register(t);
             this.roadModel.get().addObjectAt(t, this.position);
             this.device.get().broadcast(TaskMessages.TASK_READY );
@@ -73,9 +75,9 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
         // Response from workers => choose best one if offer
         if (this.device.get().getUnreadCount() > 0){
             ImmutableList<Message> answers = this.device.get().getUnreadMessages();
-            for(Message m : answers){
-                System.out.println(m.getContents());
-            }
+            int index = rng.nextInt(answers.size());
+            Message answer = answers.get(index);
+            this.assignNewTask((CNPAgent) answer.getSender());
         }
         // if there are tasks left and there is no response in the given timeframe
         // rebroadcast
@@ -85,6 +87,14 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
     @Override
     public void afterTick(TimeLapse timeLapse) {
 
+    }
+
+    private void assignNewTask(CNPAgent cnpAgent) {
+        if (this.stillToBeAssignedTasks.size() > 0) {
+            Task task = this.stillToBeAssignedTasks.get(0);
+            cnpAgent.assignTask(task);
+            this.stillToBeAssignedTasks.remove(0);
+        }
     }
 
     enum TaskMessages implements MessageContents {
