@@ -10,6 +10,8 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.math3.random.RandomGenerator;
 
+import java.util.HashMap;
+
 /**
  * Created by bavo and michiel.
  */
@@ -21,7 +23,9 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
     private Optional<CommDevice> device;
     private final double range;
     private final double reliability;
+    private double broadcastDelay;
     private final Point position;
+    private HashMap<String, Task> stillToBeAssignedTasks = new HashMap();
 
     public TaskStation(RandomGenerator rng, Point point, PDPModel pdpModel, RoadModel roadModel){
         this.pdpmodel = Optional.of(pdpModel);
@@ -61,6 +65,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
         double toss = rng.nextDouble();
         if (toss >= 0 && toss <= 0.002){
             Task t = new Task(this.position, this.roadModel.get().getRandomPosition(rng), 10);
+            this.stillToBeAssignedTasks.put(t.toString(), t);
             this.pdpmodel.get().register(t);
             this.roadModel.get().addObjectAt(t, this.position);
             this.device.get().broadcast(TaskMessages.TASK_READY );
