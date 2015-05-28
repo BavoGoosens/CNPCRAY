@@ -40,6 +40,7 @@ public class CNPAgent extends Vehicle implements CommUser {
     private TaskStation taskStation;
     private Optional<Point> destinationAfterCharging = Optional.absent();
     private Optional<Task> assignedTask = Optional.absent();
+    private Optional<Task> taskToBeAssigned = Optional.absent();
     private List<Task> completedTasks = new ArrayList<Task>();
 
     private long energy;
@@ -104,7 +105,6 @@ public class CNPAgent extends Vehicle implements CommUser {
                     Point taskpos = this.roadModel.get().getPosition(task);
                     this.setNextDestination(taskpos);
                     this.taskStation = task;
-                    this.device.get().broadcast(TaskStation.TaskMessages.TASK_OFFER);
                 }
             }
 
@@ -129,8 +129,11 @@ public class CNPAgent extends Vehicle implements CommUser {
         }
 
         roadModel.get().followPath(this, path, timeLapse);
-        if (this.assignedTask.isPresent()) {
-            //this.roadModel.get().moveTo(assignedTask.get(), this.getPosition().get(), timeLapse);
+        if (this.taskStation != null) {
+            if (this.inRange(this.taskStation.getPosition().get())) {
+                this.device.get().send(TaskStation.TaskMessages.TASK_OFFER, this.taskStation);
+                this.taskStation = null;
+            }
         }
 
         if (roadModel.get().getPosition(this).equals(destination.get())) {
@@ -140,9 +143,6 @@ public class CNPAgent extends Vehicle implements CommUser {
                 this.energyToCharge = energyLoaded;
                 this.batteryStation = null;
                 this.charging = Math.round(energyLoaded/chargingFactor);
-            } else if (this.taskStation != null) {
-                this.device.get().send(TaskStation.TaskMessages.TASK_OFFER, this.taskStation);
-                this.taskStation = null;
             } else if (this.assignedTask.isPresent()) {
                 this.completedTasks.add(this.assignedTask.get());
                 this.assignedTask = Optional.absent();
@@ -195,6 +195,17 @@ public class CNPAgent extends Vehicle implements CommUser {
             this.destination = Optional.of(this.batteryStation.getPosition().get());
             this.path = new LinkedList<>(this.roadModel.get().getShortestPathTo(this, this.destination.get()));
         }
+    }
+
+    private boolean inRange(Point p) {
+        Point position = this.getPosition().get();
+        double distance = Math.sqrt(Math.pow(position.x - p.x, 2) + Math.pow(position.y - p.y, 2));
+        return distance < range;
+    }
+
+    public void declareTaskManager(Task task) {
+        this.taskToBeAssigned = Optional.of(task);
+        this.device.get().broadcast(TaskStation.TaskMessages.TASK_READY);
     }
 
     public void assignTask(Task task) {

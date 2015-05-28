@@ -29,6 +29,8 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
     private final Point position;
     private List<Task> stillToBeAssignedTasks = new ArrayList<Task>();
 
+    private final int minimumBids = 2;
+
     public TaskStation(RandomGenerator rng, Point point, PDPModel pdpModel, RoadModel roadModel){
         this.pdpmodel = Optional.of(pdpModel);
         this.position = point;
@@ -77,7 +79,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
             ImmutableList<Message> answers = this.device.get().getUnreadMessages();
             int index = rng.nextInt(answers.size());
             Message answer = answers.get(index);
-            this.assignNewTask((CNPAgent) answer.getSender());
+            this.declareTaskManager((CNPAgent) answer.getSender());
         }
         // if there are tasks left and there is no response in the given timeframe
         // rebroadcast
@@ -89,11 +91,20 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
 
     }
 
-    private void assignNewTask(CNPAgent cnpAgent) {
+    private int getNumberOfBids() {
+        List<CNPAgent> bidders = new ArrayList<CNPAgent>();
+        for (Message message: this.device.get().getUnreadMessages()) {
+            if (!bidders.contains(message.getSender())) {
+                bidders.add((CNPAgent) message.getSender());
+            }
+        }
+        return bidders.size();
+    }
+
+    private void declareTaskManager(CNPAgent agent) {
         if (this.stillToBeAssignedTasks.size() > 0) {
             Task task = this.stillToBeAssignedTasks.get(0);
-            cnpAgent.assignTask(task);
-            this.stillToBeAssignedTasks.remove(0);
+            agent.declareTaskManager(task);
         }
     }
 

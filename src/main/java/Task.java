@@ -17,6 +17,10 @@ public class Task extends Parcel {
         this.origin = origin;
     }
 
+    public Point getPosition() {
+        return this.getRoadModel().getPosition(this);
+    }
+
     public CNPAgent getAgent() {
         return this.agent;
     }
