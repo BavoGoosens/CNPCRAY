@@ -68,7 +68,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
     @Override
     public void tick(TimeLapse timeLapse) {
         double toss = rng.nextDouble();
-        if (toss >= 0 && toss <= 0.002){
+        if (toss >= 0 && toss <= 0.001){
             //RandomLy generate new Tasks
             Point ori =this.roadModel.get().getRandomPosition(rng);
             Task t = new Task(ori, this.position, 10, this);
@@ -87,6 +87,11 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
         }
         // if there are tasks left and there is no response in the given timeframe
         // rebroadcast
+        /*if (this.lastReceiveTime > this.broadcastThreshold){
+            for(Task t : stillToBeAssignedTasks){
+                this.device.get().broadcast(TaskMessages.TASK_READY);
+            }
+        }*/
 
     }
 
@@ -109,6 +114,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
         if (this.stillToBeAssignedTasks.size() > 0) {
             Task task = this.stillToBeAssignedTasks.get(0);
             agent.assignTask(task);
+            this.stillToBeAssignedTasks.remove(0);
         }
     }
 

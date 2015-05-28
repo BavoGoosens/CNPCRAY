@@ -68,6 +68,7 @@ public class CNPAgent extends Vehicle implements CommUser {
 
         range = rng.nextDouble();
         reliability = rng.nextDouble();
+        setCapacity(1);
     }
 
     public long getEnergy() {
@@ -148,9 +149,11 @@ public class CNPAgent extends Vehicle implements CommUser {
             } else if (this.assignedTask.isPresent()) {
                 this.carryingTask = this.assignedTask;
                 this.assignedTask = Optional.absent();
+                this.pdpModel.get().pickup(this, this.carryingTask.get(), timeLapse);
                 this.carryingTask.get().pickUp(this);
                 this.setNextDestination(this.carryingTask.get().getDestination());
             } else if (this.carryingTask.isPresent()) {
+                this.pdpModel.get().deliver(this, this.carryingTask.get(), timeLapse);
                 this.carryingTask.get().drop();
                 this.carryingTask = Optional.absent();
                 this.setNextDestination(null);
