@@ -70,10 +70,11 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
         double toss = rng.nextDouble();
         if (toss >= 0 && toss <= 0.002){
             //RandomLy generate new Tasks
-            Task t = new Task(this.position, this.roadModel.get().getRandomPosition(rng), 10);
+            Point ori =this.roadModel.get().getRandomPosition(rng);
+            Task t = new Task(ori, this.position, 10);
             this.stillToBeAssignedTasks.add(t);
             this.pdpmodel.get().register(t);
-            this.roadModel.get().addObjectAt(t, this.position);
+            this.roadModel.get().addObjectAt(t, ori);
             this.device.get().broadcast(TaskMessages.TASK_READY );
         }
         // Response from workers => choose best one if offer

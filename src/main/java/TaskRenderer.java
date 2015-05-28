@@ -56,7 +56,7 @@ public class TaskRenderer implements ModelRenderer{
     final UiSchema uiSchema;
 
     public TaskRenderer(){
-        img = ImageType.LARGE;
+        img = ImageType.SMALL;
         roadModel = Optional.absent();
         pdpModel = Optional.absent();
         uiSchema = new UiSchema(false);
