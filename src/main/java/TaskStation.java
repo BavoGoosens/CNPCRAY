@@ -25,7 +25,8 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
     private Optional<CommDevice> device;
     private final double range;
     private final double reliability;
-    private double broadcastDelay;
+    long lastReceiveTime = 0;
+    private double broadcastThreshold = 5000;
     private final Point position;
     private List<Task> stillToBeAssignedTasks = new ArrayList<Task>();
 
@@ -68,6 +69,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
     public void tick(TimeLapse timeLapse) {
         double toss = rng.nextDouble();
         if (toss >= 0 && toss <= 0.002){
+            //RandomLy generate new Tasks
             Task t = new Task(this.position, this.roadModel.get().getRandomPosition(rng), 10);
             this.stillToBeAssignedTasks.add(t);
             this.pdpmodel.get().register(t);
@@ -76,6 +78,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
         }
         // Response from workers => choose best one if offer
         if (this.device.get().getUnreadCount() > 0){
+            lastReceiveTime = timeLapse.getStartTime();
             ImmutableList<Message> answers = this.device.get().getUnreadMessages();
             int index = rng.nextInt(answers.size());
             Message answer = answers.get(index);
