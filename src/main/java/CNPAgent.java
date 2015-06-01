@@ -36,7 +36,7 @@ public class CNPAgent extends Vehicle implements CommUser {
     private final RandomGenerator rng;
 
     private long lastReceiveTime = 0;
-    private BatteryStation batteryStation;
+    private Optional<BatteryStation> batteryStation;
     private TaskStation taskStation;
     private Optional<Point> destinationAfterCharging = Optional.absent();
     private Optional<Task> assignedTask = Optional.absent();
@@ -98,17 +98,17 @@ public class CNPAgent extends Vehicle implements CommUser {
             this.move(timeLapse);
             this.decreaseEnergyWith(moveCost);
         }
-        if (this.charging < 0 && !this.assignedTask.isPresent() && !this.carryingTask.isPresent() && this.batteryStation == null && this.device.get().getUnreadCount() > 0){
+        if (this.canAcceptTasks() && this.device.get().getUnreadCount() > 0){
             ImmutableList<Message> received = this.device.get().getUnreadMessages();
             for (Message m : received){
                 CommUser sender = m.getSender();
                 if (sender.getClass().equals(TaskStation.class)){
                     TaskStation task = (TaskStation) sender;
                     Point taskpos = this.roadModel.get().getPosition(task);
-                    this.setNextDestination(taskpos);
-                    if (taskpos.equals(new Point(0.0, 29.0))) {
+                    if (this.batteryStation.isPresent() && taskpos.equals(new Point(0.0, 29.0))) {
                         System.out.println("test");
                     }
+                    this.setNextDestination(taskpos);
                     this.taskStation = task;
                 }
             }
@@ -117,7 +117,7 @@ public class CNPAgent extends Vehicle implements CommUser {
     }
 
     private boolean canAcceptTasks() {
-        return true;
+        return this.charging < 0 && !this.assignedTask.isPresent() && !this.carryingTask.isPresent() && !this.batteryStation.isPresent();
     }
 
     public double getEnergyPercentage() {
@@ -188,7 +188,7 @@ public class CNPAgent extends Vehicle implements CommUser {
     }
 
     private void setNextDestination( Point destiny) {
-        if (destiny != null && this.batteryStation == null){
+        if (destiny != null){
             System.out.println("Now going to the destination: " + destiny);
             this.destination = Optional.of(destiny);
             this.path = new LinkedList<>(this.roadModel.get().getShortestPathTo(this,
