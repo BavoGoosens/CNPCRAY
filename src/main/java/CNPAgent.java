@@ -36,8 +36,8 @@ public class CNPAgent extends Vehicle implements CommUser {
     private final RandomGenerator rng;
 
     private long lastReceiveTime = 0;
-    private Optional<BatteryStation> batteryStation;
-    private TaskStation taskStation;
+    private Optional<BatteryStation> batteryStation = Optional.absent();
+    private Optional<TaskStation> taskStation = Optional.absent();
     private Optional<Point> destinationAfterCharging = Optional.absent();
     private Optional<Task> assignedTask = Optional.absent();
     private Optional<Task> carryingTask = Optional.absent();
@@ -98,18 +98,18 @@ public class CNPAgent extends Vehicle implements CommUser {
             this.move(timeLapse);
             this.decreaseEnergyWith(moveCost);
         }
-        if (this.canAcceptTasks() && this.device.get().getUnreadCount() > 0){
+        if (this.canAcceptTasks() && !this.batteryStation.isPresent() && this.device.get().getUnreadCount() > 0){
             ImmutableList<Message> received = this.device.get().getUnreadMessages();
             for (Message m : received){
                 CommUser sender = m.getSender();
                 if (sender.getClass().equals(TaskStation.class)){
                     TaskStation task = (TaskStation) sender;
                     Point taskpos = this.roadModel.get().getPosition(task);
-                    if (this.batteryStation.isPresent() && taskpos.equals(new Point(0.0, 29.0))) {
+                    if (this.batteryStation.isPresent()) {
                         System.out.println("test");
                     }
                     this.setNextDestination(taskpos);
-                    this.taskStation = task;
+                    this.taskStation = Optional.of(task);
                 }
             }
 
@@ -117,7 +117,8 @@ public class CNPAgent extends Vehicle implements CommUser {
     }
 
     private boolean canAcceptTasks() {
-        return this.charging < 0 && !this.assignedTask.isPresent() && !this.carryingTask.isPresent() && !this.batteryStation.isPresent();
+        return this.charging < 0 && !this.assignedTask.isPresent()
+                && !this.carryingTask.isPresent() && !this.batteryStation.isPresent();
     }
 
     public double getEnergyPercentage() {
@@ -136,21 +137,21 @@ public class CNPAgent extends Vehicle implements CommUser {
         if (!destination.isPresent()) {
             // geen destination present random rondbewegen.
             this.setNextDestination(null);
-        } else if (this.taskStation != null) {
+        } else if (this.taskStation.isPresent()) {
             // Agent is naar taskstation aan het bewegen en komt in range dus gaat offer maken.
-            if (this.inRange(this.taskStation.getPosition().get())) {
-                this.device.get().send(TaskStation.TaskMessages.TASK_OFFER, this.taskStation);
+            if (this.inRange(this.taskStation.get().getPosition().get())) {
+                this.device.get().send(TaskStation.TaskMessages.TASK_OFFER, this.taskStation.get());
                 this.taskStation = null;
             }
-        }else if (roadModel.get().getPosition(this).equals(destination.get())) {
+        } else if (roadModel.get().getPosition(this).equals(destination.get())) {
             // De destination is bereikt.
-            if (this.batteryStation != null) {
+            if (this.batteryStation.isPresent()) {
                 // if battery station
                 this.energyBeforeCharging = this.energy;
-                long energyLoaded = this.batteryStation.loadBattery(this);
+                long energyLoaded = this.batteryStation.get().loadBattery(this);
                 this.energyToCharge = energyLoaded;
-                this.batteryStation = null;
-                this.charging = Math.round(energyLoaded/chargingFactor);
+                this.batteryStation = Optional.absent();
+                this.charging = Math.round(energyLoaded / chargingFactor);
                 this.setNextDestination(null);
             } else if (this.assignedTask.isPresent()) {
                 // aangekomen op plaats naar een taal
@@ -169,9 +170,8 @@ public class CNPAgent extends Vehicle implements CommUser {
                 // geen taken ontvangen of echte goals gezet => zet op null om random verder te blijven bewegen.
                 this.setNextDestination(null);
             }
-        } else {
-            roadModel.get().followPath(this, path, timeLapse);
         }
+            roadModel.get().followPath(this, path, timeLapse);
     }
 
     private void decreaseEnergyWith(long energyDecrease) {
@@ -214,8 +214,8 @@ public class CNPAgent extends Vehicle implements CommUser {
         if (energyAfterJob < 4000) {
             System.out.println("Charge battery first");
             this.destinationAfterCharging = this.destination;
-            this.batteryStation = ((CNPRoadModel) this.roadModel.get()).getNearestBatteryStation(this.getPosition().get());
-            this.destination = Optional.of(this.batteryStation.getPosition().get());
+            this.batteryStation = Optional.of(((CNPRoadModel) this.roadModel.get()).getNearestBatteryStation(this.getPosition().get()));
+            this.destination = Optional.of(this.batteryStation.get().getPosition().get());
             this.path = new LinkedList<>(this.roadModel.get().getShortestPathTo(this, this.destination.get()));
         }
     }
