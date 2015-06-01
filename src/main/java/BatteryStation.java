@@ -35,6 +35,7 @@ public class BatteryStation implements CommUser, RoadUser{
     }
 
     public long loadBattery(CNPAgent agent) {
+        Optional<Point> p = agent.getPosition();
         if (!agent.getPosition().equals(this.getPosition())) {
             System.out.println("The battery of agent: "+agent.toString()+" (position: "+agent.getPosition().get()+") cannot be loaded " +
                     " by battery station: "+this.toString()+" (position: "+this.getPosition().get()+") because it is not located here.");
