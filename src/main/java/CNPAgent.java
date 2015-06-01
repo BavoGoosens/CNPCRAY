@@ -134,21 +134,18 @@ public class CNPAgent extends Vehicle implements CommUser {
 
     private void move(TimeLapse timeLapse) {
         if (!destination.isPresent()) {
+            // geen destination present random rondbewegen.
             this.setNextDestination(null);
-        }
-
-
-
-        roadModel.get().followPath(this, path, timeLapse);
-        if (this.taskStation != null) {
+        } else if (this.taskStation != null) {
+            // Agent is naar taskstation aan het bewegen en komt in range dus gaat offer maken.
             if (this.inRange(this.taskStation.getPosition().get())) {
                 this.device.get().send(TaskStation.TaskMessages.TASK_OFFER, this.taskStation);
                 this.taskStation = null;
             }
-        }
-
-        if (roadModel.get().getPosition(this).equals(destination.get())) {
+        }else if (roadModel.get().getPosition(this).equals(destination.get())) {
+            // De destination is bereikt.
             if (this.batteryStation != null) {
+                // if battery station
                 this.energyBeforeCharging = this.energy;
                 long energyLoaded = this.batteryStation.loadBattery(this);
                 this.energyToCharge = energyLoaded;
@@ -156,20 +153,24 @@ public class CNPAgent extends Vehicle implements CommUser {
                 this.charging = Math.round(energyLoaded/chargingFactor);
                 this.setNextDestination(null);
             } else if (this.assignedTask.isPresent()) {
+                // aangekomen op plaats naar een taal
                 this.carryingTask = this.assignedTask;
                 this.assignedTask = Optional.absent();
                 this.pdpModel.get().pickup(this, this.carryingTask.get(), timeLapse);
                 this.carryingTask.get().pickUp(this);
                 this.setNextDestination(this.carryingTask.get().getDestination());
             } else if (this.carryingTask.isPresent()) {
+                // aangekomen op eindbestemming
                 this.pdpModel.get().deliver(this, this.carryingTask.get(), timeLapse);
                 this.carryingTask.get().drop();
                 this.carryingTask = Optional.absent();
                 this.setNextDestination(null);
             } else {
+                // geen taken ontvangen of echte goals gezet => zet op null om random verder te blijven bewegen.
                 this.setNextDestination(null);
             }
-
+        } else {
+            roadModel.get().followPath(this, path, timeLapse);
         }
     }
 
