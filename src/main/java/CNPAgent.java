@@ -98,7 +98,7 @@ public class CNPAgent extends Vehicle implements CommUser {
             this.move(timeLapse);
             this.decreaseEnergyWith(moveCost);
         }
-        if (!this.assignedTask.isPresent() && !this.carryingTask.isPresent() && this.batteryStation == null && this.device.get().getUnreadCount() > 0){
+        if (this.charging < 0 && !this.assignedTask.isPresent() && !this.carryingTask.isPresent() && this.batteryStation == null && this.device.get().getUnreadCount() > 0){
             ImmutableList<Message> received = this.device.get().getUnreadMessages();
             for (Message m : received){
                 CommUser sender = m.getSender();
@@ -106,11 +106,18 @@ public class CNPAgent extends Vehicle implements CommUser {
                     TaskStation task = (TaskStation) sender;
                     Point taskpos = this.roadModel.get().getPosition(task);
                     this.setNextDestination(taskpos);
+                    if (taskpos.equals(new Point(0.0, 29.0))) {
+                        System.out.println("test");
+                    }
                     this.taskStation = task;
                 }
             }
 
         }
+    }
+
+    private boolean canAcceptTasks() {
+        return true;
     }
 
     public double getEnergyPercentage() {
@@ -129,6 +136,8 @@ public class CNPAgent extends Vehicle implements CommUser {
         if (!destination.isPresent()) {
             this.setNextDestination(null);
         }
+
+
 
         roadModel.get().followPath(this, path, timeLapse);
         if (this.taskStation != null) {
@@ -178,7 +187,7 @@ public class CNPAgent extends Vehicle implements CommUser {
     }
 
     private void setNextDestination( Point destiny) {
-        if (destiny != null && this.batteryStation != null){
+        if (destiny != null && this.batteryStation == null){
             System.out.println("Now going to the destination: " + destiny);
             this.destination = Optional.of(destiny);
             this.path = new LinkedList<>(this.roadModel.get().getShortestPathTo(this,
