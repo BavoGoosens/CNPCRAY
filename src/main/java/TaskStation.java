@@ -112,10 +112,14 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
     }
 
     private void assignTask(CNPAgent agent) {
-        if (this.stillToBeAssignedTasks.size() > 0) {
-            Task task = this.stillToBeAssignedTasks.get(0);
-            agent.assignTask(task);
-            this.stillToBeAssignedTasks.remove(0);
+        try {
+            if (this.stillToBeAssignedTasks.size() > 0) {
+                Task task = this.stillToBeAssignedTasks.get(0);
+                agent.assignTask(task);
+                this.stillToBeAssignedTasks.remove(0);
+            }
+        } catch (IllegalStateException e) {
+            System.out.println("Task refused by agent: "+agent.toString()+".");
         }
     }
 

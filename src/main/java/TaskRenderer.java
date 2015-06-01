@@ -98,7 +98,7 @@ public class TaskRenderer implements ModelRenderer{
                     offsetY = (int) img.atSiteOffset.y + y - image.getBounds().height / 2;
                     Set<? extends Parcel> objs = roadModel.get().getObjectsAt(p, p.getClass());
                     int nb = objs.size();
-                    gc.drawText(String.valueOf(nb), offsetX + 40, offsetY, true);
+                    if (nb > 1) gc.drawText(String.valueOf(nb), offsetX + 40, offsetY, true);
                     gc.drawImage(image, offsetX, offsetY);
                 }
             }

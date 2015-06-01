@@ -1,4 +1,3 @@
-import com.github.rinde.rinsim.core.TickListener;
 import com.github.rinde.rinsim.core.TimeLapse;
 import com.github.rinde.rinsim.core.model.comm.CommDevice;
 import com.github.rinde.rinsim.core.model.comm.CommDeviceBuilder;
@@ -6,15 +5,12 @@ import com.github.rinde.rinsim.core.model.comm.CommUser;
 import com.github.rinde.rinsim.core.model.comm.Message;
 import com.github.rinde.rinsim.core.model.pdp.PDPModel;
 import com.github.rinde.rinsim.core.model.pdp.Vehicle;
-import com.github.rinde.rinsim.core.model.road.GraphRoadModel;
-import com.github.rinde.rinsim.core.model.road.MovingRoadUser;
 import com.github.rinde.rinsim.core.model.road.RoadModel;
 import com.github.rinde.rinsim.geom.Point;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.math3.random.RandomGenerator;
 
-import javax.swing.text.html.Option;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -59,15 +55,15 @@ public class CNPAgent extends Vehicle implements CommUser {
     }
 
     CNPAgent(RandomGenerator r, long energy) {
-        rng = r;
+        this.rng = r;
         this.energy = energy;
-        roadModel = Optional.absent();
-        destination = Optional.absent();
-        path = new LinkedList<>();
-        device = Optional.absent();
+        this.roadModel = Optional.absent();
+        this.destination = Optional.absent();
+        this.device = Optional.absent();
+        this.path = new LinkedList<>();
 
-        range = rng.nextDouble();
-        reliability = rng.nextDouble();
+        this.range = this.rng.nextDouble();
+        this.reliability = this.rng.nextDouble();
         setCapacity(1);
     }
 
@@ -98,25 +94,30 @@ public class CNPAgent extends Vehicle implements CommUser {
             this.move(timeLapse);
             this.decreaseEnergyWith(moveCost);
         }
-        if (this.canAcceptTasks() && !this.batteryStation.isPresent() && this.device.get().getUnreadCount() > 0){
+        if (this.device.get().getUnreadCount() > 0){
             ImmutableList<Message> received = this.device.get().getUnreadMessages();
-            for (Message m : received){
-                CommUser sender = m.getSender();
-                if (sender.getClass().equals(TaskStation.class)){
-                    TaskStation task = (TaskStation) sender;
-                    Point taskpos = this.roadModel.get().getPosition(task);
-                    if (this.batteryStation.isPresent()) {
-                        System.out.println("test");
-                    }
+            Message m = received.get(0);
+            CommUser sender = m.getSender();
+            if (sender.getClass().equals(TaskStation.class)) {
+                TaskStation task = (TaskStation) sender;
+                Point taskpos = this.roadModel.get().getPosition(task);
+                if (this.canAcceptNewTasks()) {
                     this.setNextDestination(taskpos);
                     this.taskStation = Optional.of(task);
                 }
             }
-
         }
     }
 
-    private boolean canAcceptTasks() {
+    public boolean isExecutingTask() {
+        return this.taskStation.isPresent() || this.carryingTask.isPresent() || this.assignedTask.isPresent();
+    }
+
+    public boolean isGoingToRecharge() {
+        return this.batteryStation.isPresent();
+    }
+
+    private boolean canAcceptNewTasks() {
         return this.charging < 0 && !this.assignedTask.isPresent()
                 && !this.carryingTask.isPresent() && !this.batteryStation.isPresent();
     }
@@ -141,9 +142,14 @@ public class CNPAgent extends Vehicle implements CommUser {
             // Agent is naar taskstation aan het bewegen en komt in range dus gaat offer maken.
             if (this.inRange(this.taskStation.get().getPosition().get())) {
                 this.device.get().send(TaskStation.TaskMessages.TASK_OFFER, this.taskStation.get());
-                this.taskStation = null;
+                this.taskStation = Optional.absent();
+                this.setNextDestination(null);
             }
-        } else if (roadModel.get().getPosition(this).equals(destination.get())) {
+        }
+
+        roadModel.get().followPath(this, path, timeLapse);
+
+        if (roadModel.get().getPosition(this).equals(destination.get())) {
             // De destination is bereikt.
             if (this.batteryStation.isPresent()) {
                 // if battery station
@@ -171,7 +177,6 @@ public class CNPAgent extends Vehicle implements CommUser {
                 this.setNextDestination(null);
             }
         }
-            roadModel.get().followPath(this, path, timeLapse);
     }
 
     private void decreaseEnergyWith(long energyDecrease) {
@@ -232,8 +237,11 @@ public class CNPAgent extends Vehicle implements CommUser {
     }
 
     public void assignTask(Task task) {
-        this.assignedTask = Optional.of(task);
-        this.setNextDestination(task.getPosition());
+        if (this.canAcceptNewTasks()) {
+            this.assignedTask = Optional.of(task);
+            this.setNextDestination(task.getPosition());
+        } else
+            throw new IllegalStateException("WHAT NU WEER");
     }
 
     @Override
