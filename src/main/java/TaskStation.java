@@ -26,10 +26,12 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
     private double retransmission = 100;
     private final Point position;
     private List<Task> stillToBeAssignedTasks = new ArrayList<Task>();
+    private int previousSize = -1;
+    private int taskCount;
+    private String name;
 
-    private final int minimumBids = 2;
-
-    public TaskStation(RandomGenerator rng, Point point, PDPModel pdpModel, RoadModel roadModel){
+    public TaskStation(String name, RandomGenerator rng, Point point, PDPModel pdpModel, RoadModel roadModel){
+        this.name = name;
         this.pdpmodel = Optional.of(pdpModel);
         this.position = point;
         this.rng = rng;
@@ -37,6 +39,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
         device = Optional.absent();
         range = rng.nextDouble();
         reliability = rng.nextDouble();
+        this.taskCount = 100;
     }
 
     @Override
@@ -66,49 +69,75 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
     public void tick(TimeLapse timeLapse) {
         this.retransmission -= 1;
         double toss = rng.nextDouble();
-        if (toss >= 0 && toss <= 0.001){
+        if (toss >= 0 && toss <= 0.001 && this.taskCount > 0){
             //RandomLy generate new Tasks
             Point ori =this.roadModel.get().getRandomPosition(rng);
             Task t = new Task(ori, this.position, 10, this);
             this.stillToBeAssignedTasks.add(t);
             this.pdpmodel.get().register(t);
             this.roadModel.get().register(t);
-            this.device.get().broadcast(TaskMessages.TASK_READY );
+            this.device.get().broadcast(TaskMessages.TASK_READY);
+            this.taskCount--;
+        }
+
+        if (this.stillToBeAssignedTasks.size() != this.previousSize) {
+            previousSize = this.stillToBeAssignedTasks.size();
+            if (this.stillToBeAssignedTasks.size() > 0) {
+                System.out.println(this.toString()+": Search task manager for "
+                        +this.stillToBeAssignedTasks.size()+" tasks. Broadcast messages.");
+            } else {
+                System.out.println(this.toString()+": No tasks available. Not searching or broadcasting.");
+            }
+        }
+        List<Integer> assignedTasks = new ArrayList<Integer>();
+        for (int i = 0; i < this.stillToBeAssignedTasks.size(); i++) {
+            if (this.searchForTaskManager(this.stillToBeAssignedTasks.get(i))) {
+                assignedTasks.add(i);
+            }
+        }
+        for (int i: assignedTasks) {
+            this.stillToBeAssignedTasks.remove(i);
         }
         // Response from workers => choose best one if offer
-        if (this.device.get().getUnreadCount() > 0){
+       /* if (this.device.get().getUnreadCount() > 0){
             ImmutableList<Message> answers = this.device.get().getUnreadMessages();
             for (Message m: answers){
                 if (! stillToBeAssignedTasks.isEmpty()){
-                    this.assignTask((CNPAgent) m.getSender());
+                    this.declareTaskManager((CNPAgent) m.getSender());
+                }
+            }
+        }*/
+        // if there are tasks left and there is no response in the given timeframe
+        // rebroadcast
+        if (this.retransmission <= 0 && this.stillToBeAssignedTasks.size() > 0){
+            this.retransmission = 100;
+            this.device.get().broadcast(TaskMessages.TASK_READY);
+        }
+
+    }
+
+    public boolean searchForTaskManager(Task task) {
+        boolean assigned = false;
+        for (Message message: this.device.get().getUnreadMessages()) {
+            CommUser sender = message.getSender();
+            if (sender instanceof CNPAgent) {
+                CNPAgent agent = (CNPAgent) sender;
+                try {
+                    agent.declareTaskManager(task);
+                    assigned = true;
+                    System.out.println(this.toString()+": task manager assigned for task "+task.toString());
+                    break;
+                } catch(IllegalStateException e) {
+                    System.out.println(e.getMessage());
                 }
             }
         }
-        // if there are tasks left and there is no response in the given timeframe
-        // rebroadcast
-        if (this.retransmission <= 0){
-            this.retransmission = 100;
-            System.out.println("retransmitting");
-            for(Task t : stillToBeAssignedTasks){
-                this.device.get().broadcast(TaskMessages.TASK_READY);
-            }
-        }
-
+        return assigned;
     }
 
     @Override
     public void afterTick(TimeLapse timeLapse) {
 
-    }
-
-    private int getNumberOfBids() {
-        List<CNPAgent> bidders = new ArrayList<CNPAgent>();
-        for (Message message: this.device.get().getUnreadMessages()) {
-            if (!bidders.contains(message.getSender())) {
-                bidders.add((CNPAgent) message.getSender());
-            }
-        }
-        return bidders.size();
     }
 
     private void assignTask(CNPAgent agent) {
@@ -123,14 +152,12 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
         }
     }
 
-    private void declareTaskManager(CNPAgent agent) {
-        if (this.stillToBeAssignedTasks.size() > 0) {
-            Task task = this.stillToBeAssignedTasks.get(0);
-            agent.declareTaskManager(task);
-        }
-    }
-
     enum TaskMessages implements MessageContents {
         NICE_TO_MEET_YOU, WHERE_IS_EVERYBODY, TASK_READY, TASK_ASSIGNED, TASK_OFFER ;
+    }
+
+    @Override
+    public String toString() {
+        return this.name;
     }
 }

@@ -35,7 +35,7 @@ public class CNPCray {
     public static void main(String[] args) {
         int graphSize = 30;
         int numberOfEmptyConnections = 15;
-        int numberOfAgents = 1;
+        int numberOfAgents = 50;
         final RandomGenerator rng = new MersenneTwister(123);
         final DefaultPDPModel pdpModel = DefaultPDPModel.create();
         final CommModel commModel = CommModel.builder().build();
@@ -47,17 +47,17 @@ public class CNPCray {
                 .build();
 
         for (int i = 0; i < numberOfAgents; i++) {
-            sim.register(new CNPAgent(sim.getRandomGenerator()));
+            sim.register(new CNPAgent("Agent"+(i+1), sim.getRandomGenerator()));
         }
 
         sim.register(new BatteryStation(sim.getRandomGenerator(), new Point(0, 15)));
         sim.register(new BatteryStation(sim.getRandomGenerator(), new Point(15, 0)));
         sim.register(new BatteryStation(sim.getRandomGenerator(), new Point(29, 15)));
         sim.register(new BatteryStation(sim.getRandomGenerator(), new Point(15, 29)));
-        sim.register(new TaskStation(sim.getRandomGenerator(), new Point(0,0), pdpModel, roadModel));
-        sim.register(new TaskStation(sim.getRandomGenerator(), new Point(0,29), pdpModel, roadModel));
-        sim.register(new TaskStation(sim.getRandomGenerator(), new Point(29, 0), pdpModel, roadModel));
-        sim.register(new TaskStation(sim.getRandomGenerator(), new Point(29, 29), pdpModel, roadModel));
+        sim.register(new TaskStation("Task station 1", sim.getRandomGenerator(), new Point(0,0), pdpModel, roadModel));
+        sim.register(new TaskStation("Task station 2", sim.getRandomGenerator(), new Point(0,29), pdpModel, roadModel));
+        sim.register(new TaskStation("Task station 3", sim.getRandomGenerator(), new Point(29, 0), pdpModel, roadModel));
+        sim.register(new TaskStation("Task station 4", sim.getRandomGenerator(), new Point(29, 29), pdpModel, roadModel));
 
 
         View.create(sim)

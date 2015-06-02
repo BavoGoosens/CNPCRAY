@@ -51,21 +51,21 @@ public class AgentDataRenderer implements ModelRenderer{
             final int y = viewPort.toCoordY(pos.y);
             offsetX = x + 0;
             offsetY = y + 12;
-            gc.drawText(cnpAgent.getEnergyPercentage()+"%", offsetX, offsetY, true);
+            if (cnpAgent.isGoingToRecharge()) {
+                if (l % 600 == 0) {
+                    gc.drawText(cnpAgent.getEnergyPercentage()+"%", offsetX, offsetY, true);
+                }
+            } else {
+                gc.drawText(cnpAgent.getEnergyPercentage()+"%", offsetX, offsetY, true);
+            }
             offsetX = x - 15;
             offsetY = y - 27;
-            if (cnpAgent.isExecutingTask()) {
-                if (cnpAgent.isGoingToRecharge()) {
-                    if (l % 600 == 0) {
-                        gc.drawText("***", offsetX, offsetY, true);
-                    }
-                } else {
+            if (cnpAgent.isTaskManager()) {
+                if (l % 600 == 0) {
                     gc.drawText("***", offsetX, offsetY, true);
                 }
-            } else if (cnpAgent.isGoingToRecharge()) {
-                if (l % 600 == 0) {
-                    gc.drawText("---", offsetX, offsetY, true);
-                }
+            } else if (cnpAgent.isExecutingTask()){
+                gc.drawText("***", offsetX, offsetY, true);
             }
             if (cnpAgent.getDestination().isPresent()) {
                 offsetX = x + 0;
