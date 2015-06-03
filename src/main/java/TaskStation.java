@@ -76,7 +76,9 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
             this.stillToBeAssignedTasks.add(t);
             this.pdpmodel.get().register(t);
             this.roadModel.get().register(t);
-            this.device.get().broadcast(TaskMessages.TASK_READY);
+            this.device.get().broadcast(
+                    new TaskMessageContents(TaskMessageContents.TaskMessage.TASK_MANAGER_NEEDED)
+            );
             this.taskCount--;
         }
 
@@ -111,7 +113,9 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
         // rebroadcast
         if (this.retransmission <= 0 && this.stillToBeAssignedTasks.size() > 0){
             this.retransmission = 100;
-            this.device.get().broadcast(TaskMessages.TASK_READY);
+            this.device.get().broadcast(
+                    new TaskMessageContents(TaskMessageContents.TaskMessage.TASK_MANAGER_NEEDED)
+            );
         }
 
     }
@@ -120,7 +124,8 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
         boolean assigned = false;
         for (Message message: this.device.get().getUnreadMessages()) {
             CommUser sender = message.getSender();
-            if (sender instanceof CNPAgent) {
+            if (sender instanceof CNPAgent &&
+                    message.getContents().equals(TaskMessageContents.TaskMessage.WANT_TO_BE_TASK_MANAGER)) {
                 CNPAgent agent = (CNPAgent) sender;
                 try {
                     agent.declareTaskManager(task);
@@ -138,22 +143,6 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
     @Override
     public void afterTick(TimeLapse timeLapse) {
 
-    }
-
-    private void assignTask(CNPAgent agent) {
-        try {
-            if (this.stillToBeAssignedTasks.size() > 0) {
-                Task task = this.stillToBeAssignedTasks.get(0);
-                agent.assignTask(task);
-                this.stillToBeAssignedTasks.remove(0);
-            }
-        } catch (IllegalStateException e) {
-            System.out.println("Task refused by agent: "+agent.toString()+".");
-        }
-    }
-
-    enum TaskMessages implements MessageContents {
-        NICE_TO_MEET_YOU, WHERE_IS_EVERYBODY, TASK_READY, TASK_ASSIGNED, TASK_OFFER ;
     }
 
     @Override

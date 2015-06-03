@@ -39,6 +39,9 @@ public class CNPAgent extends Vehicle implements CommUser {
     private Optional<Task> assignedTask = Optional.absent();
     private Optional<Task> carryingTask = Optional.absent();
     private Optional<Task> taskManagerTask = Optional.absent();
+    private Optional<CNPAgent> followAgent = Optional.absent();
+
+    private List<CNPAgent> possibleWorkers = new ArrayList<>();
 
     private long energy;
     private long charging = -1;
@@ -51,6 +54,7 @@ public class CNPAgent extends Vehicle implements CommUser {
     private final static long moveCost = 3;
     private final static long fullEnergy = 30000;
     private final static int chargingFactor = 100;
+    private final static int workersNeeded = 3;
 
     CNPAgent(String name, RandomGenerator r) {
         this(name, r, fullEnergy);
@@ -66,7 +70,7 @@ public class CNPAgent extends Vehicle implements CommUser {
         this.path = new LinkedList<>();
 
         this.range = this.rng.nextDouble();
-        this.reliability = this.rng.nextDouble();
+        this.reliability = 1;
         setCapacity(1);
     }
 
@@ -109,20 +113,57 @@ public class CNPAgent extends Vehicle implements CommUser {
                     this.taskStation = Optional.of(task);
                 }
             } else if (sender.getClass().equals(CNPAgent.class)) {
-                // bid for task
-                if (this.canAcceptNewTasks()) {
-                    CNPAgent taskManager = (CNPAgent) sender;
-                    System.out.println(this.toString() + ": Message received from task manager: "
-                            + taskManager.toString() + ". Bid for task.");
-                    taskManager.bid(this);
+                CNPAgent cnpAgent = (CNPAgent) sender;
+                if (m.getContents().equals(TaskMessageContents.TaskMessage.WORKER_NEEDED)) {
+                    // bid for task
+                    if (this.canAcceptNewTasks()) {
+                        System.out.println(this.toString() + ": Message received from task manager: "
+                                + cnpAgent.toString() + ". Bid for task.");
+                        this.device.get().send(
+                                new TaskMessageContents(TaskMessageContents.TaskMessage.WANT_TO_BE_WORKER),
+                                sender
+                        );
+                        this.followAgent = Optional.of(cnpAgent);
+                        this.destination = Optional.absent();
+                        this.taskStation = Optional.absent();
+                    }
+                } else if (m.getContents().equals((TaskMessageContents.TaskMessage.WANT_TO_BE_WORKER))
+                        && this.taskManagerTask.isPresent()) {
+                    this.possibleWorkers.add(cnpAgent);
+                    if (this.possibleWorkers.size() >= workersNeeded) {
+                        CNPAgent worker = this.possibleWorkers.get(0);
+                        this.device.get().send(
+                                new TaskMessageContents(TaskMessageContents.TaskMessage.WORKER_ASSIGNED, this.taskManagerTask.get()),
+                                worker
+                        );
+                        this.possibleWorkers.remove(0);
+                        for (CNPAgent otherWorker: this.possibleWorkers) {
+                            this.device.get().send(
+                                    new TaskMessageContents(TaskMessageContents.TaskMessage.WORKER_DECLINED),
+                                    otherWorker
+                            );
+                        }
+                        this.possibleWorkers.clear();
+                        this.taskManagerTask = Optional.absent();
+                    }
+
+                } else if (m.getContents().equals(TaskMessageContents.TaskMessage.WORKER_ASSIGNED)) {
+                    TaskMessageContents contents = (TaskMessageContents) m.getContents();
+                    this.assignTask(contents.getTask());
+                } else if (m.getContents().equals(TaskMessageContents.TaskMessage.WORKER_DECLINED)) {
+                    this.followAgent = Optional.absent();
+                } else if (m.getContents().equals(TaskMessageContents.TaskMessage.LEAVING)) {
+                    this.possibleWorkers.remove(cnpAgent);
                 }
             }
         }
-        if (this.taskManagerTask.isPresent()) {
+        if (this.taskManagerTask.isPresent() && this.possibleWorkers.size() < workersNeeded) {
             this.retransmission--;
             if (this.retransmission < 0) {
                 this.retransmission = 100;
-                this.device.get().broadcast(TaskStation.TaskMessages.TASK_READY);
+                this.device.get().broadcast(
+                        new TaskMessageContents(TaskMessageContents.TaskMessage.WORKER_NEEDED)
+                );
             }
         }
     }
@@ -135,7 +176,11 @@ public class CNPAgent extends Vehicle implements CommUser {
     }
 
     public boolean isExecutingTask() {
-        return this.taskStation.isPresent() || this.carryingTask.isPresent() || this.assignedTask.isPresent();
+        return this.carryingTask.isPresent() || this.assignedTask.isPresent();
+    }
+
+    public boolean isGoingToTaskStation() {
+        return this.taskStation.isPresent();
     }
 
     public boolean isGoingToRecharge() {
@@ -145,17 +190,21 @@ public class CNPAgent extends Vehicle implements CommUser {
     private boolean canAcceptNewTasks() {
         return this.charging < 0 && !this.assignedTask.isPresent()
                 && !this.carryingTask.isPresent() && !this.batteryStation.isPresent()
-                && !this.taskManagerTask.isPresent();
+                && !this.taskManagerTask.isPresent() && !this.followAgent.isPresent();
     }
 
     private boolean canBeTaskManager() {
         return this.charging < 0 && !this.taskStation.isPresent() && !this.assignedTask.isPresent()
                 && !this.carryingTask.isPresent() && !this.batteryStation.isPresent()
-                && !this.taskManagerTask.isPresent();
+                && !this.taskManagerTask.isPresent() && !this.followAgent.isPresent();
     }
 
     public boolean isTaskManager() {
         return this.taskManagerTask.isPresent();
+    }
+
+    public int getNumberOfPossibleWorkers() {
+        return this.possibleWorkers.size();
     }
 
     public double getEnergyPercentage() {
@@ -171,13 +220,29 @@ public class CNPAgent extends Vehicle implements CommUser {
     }
 
     private void move(TimeLapse timeLapse) {
-        if (!destination.isPresent()) {
+        if (this.followAgent.isPresent()) {
+            this.path = new LinkedList<>(
+                    this.roadModel.get().getShortestPathTo(
+                            this, this.followAgent.get().getPosition().get()
+                    )
+            );
+            if (this.getEnergyPercentage() < 30) {
+                this.device.get().send(
+                        new TaskMessageContents(TaskMessageContents.TaskMessage.LEAVING),
+                        this.followAgent.get()
+                );
+                this.followAgent = Optional.absent();
+            }
+        } else if (!destination.isPresent()) {
             // geen destination present random rondbewegen.
             this.setNextDestination(null);
         } else if (this.taskStation.isPresent()) {
             // Agent is naar taskstation aan het bewegen en komt in range dus gaat offer maken.
             if (this.inRange(this.taskStation.get().getPosition().get())) {
-                this.device.get().send(TaskStation.TaskMessages.TASK_OFFER, this.taskStation.get());
+                this.device.get().send(
+                        new TaskMessageContents(TaskMessageContents.TaskMessage.WANT_TO_BE_TASK_MANAGER),
+                        this.taskStation.get()
+                );
                 this.taskStation = Optional.absent();
                 this.setNextDestination(null);
             }
@@ -185,7 +250,7 @@ public class CNPAgent extends Vehicle implements CommUser {
 
         roadModel.get().followPath(this, path, timeLapse);
 
-        if (roadModel.get().getPosition(this).equals(destination.get())) {
+        if (this.destination.isPresent() && roadModel.get().getPosition(this).equals(destination.get())) {
             // De destination is bereikt.
             if (this.batteryStation.isPresent()) {
                 // if battery station
@@ -281,13 +346,14 @@ public class CNPAgent extends Vehicle implements CommUser {
     }
 
     public void assignTask(Task task) {
-        if (this.canAcceptNewTasks()) {
+        if (this.followAgent.isPresent()) {
             this.assignedTask = Optional.of(task);
             /*
             Wanneer de robot op weg is naar een taskstation moet hij dit stoppen
             en de pickup-task opnemen.
              */
             this.taskStation = Optional.absent();
+            this.followAgent = Optional.absent();
             this.setNextDestination(task.getPosition());
         } else
             throw new IllegalStateException("WHAT NU WEER");

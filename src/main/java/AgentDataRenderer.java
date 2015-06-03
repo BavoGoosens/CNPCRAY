@@ -50,7 +50,7 @@ public class AgentDataRenderer implements ModelRenderer{
             final int x = viewPort.toCoordX(pos.x);
             final int y = viewPort.toCoordY(pos.y);
             offsetX = x + 0;
-            offsetY = y + 12;
+            offsetY = y - 20;
             if (cnpAgent.isGoingToRecharge()) {
                 if (l % 600 == 0) {
                     gc.drawText(cnpAgent.getEnergyPercentage()+"%", offsetX, offsetY, true);
@@ -62,16 +62,30 @@ public class AgentDataRenderer implements ModelRenderer{
             offsetY = y - 27;
             if (cnpAgent.isTaskManager()) {
                 if (l % 600 == 0) {
-                    gc.drawText("***", offsetX, offsetY, true);
+                    String text;
+                    if (cnpAgent.getNumberOfPossibleWorkers() == 0) {
+                        text = "---";
+                    } else if (cnpAgent.getNumberOfPossibleWorkers() == 1) {
+                        text = "*--";
+                    } else if (cnpAgent.getNumberOfPossibleWorkers() == 2) {
+                        text = "**-";
+                    } else if (cnpAgent.getNumberOfPossibleWorkers() == 3) {
+                        text = "***";
+                    } else {
+                        text = "???";
+                    }
+                    gc.drawText(text, offsetX, offsetY, true);
                 }
             } else if (cnpAgent.isExecutingTask()){
-                gc.drawText("***", offsetX, offsetY, true);
+                gc.drawText("+++", offsetX, offsetY, true);
+            } else if (cnpAgent.isGoingToTaskStation()) {
+                gc.drawText("ttt", offsetX, offsetY, true);
             }
-            if (cnpAgent.getDestination().isPresent()) {
-                offsetX = x + 0;
-                offsetY = y - 20;
+            /*if (cnpAgent.getDestination().isPresent()) {
+                offsetX = x + 0;0
+                offsetY = y - 12;-20
                 gc.drawText(cnpAgent.getDestination().get().toString(), offsetX, offsetY, true);
-            }
+            }*/
 
         }
     }
