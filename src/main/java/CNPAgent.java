@@ -13,6 +13,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 
+import static java.lang.Math.pow;
+import static java.lang.Math.sqrt;
+
 /**
  * Created by bavo and michiel
  */
@@ -207,6 +210,13 @@ public class CNPAgent extends Vehicle implements CommUser {
         return this.destination;
     }
 
+    private double calculateProposal(Point p){
+        double manhattan = sqrt(pow((this.getPosition().get().x - p.x),2) + pow((this.getPosition().get().y - p.y), 2));
+        double energyCost = (this.roadModel.get().getShortestPathTo(this, p).size() - 1) * moveCost * 72;
+        double chargeChance = (1 - this.getEnergyPercentage()) + 0.000000001234;
+        return (manhattan + energyCost) * chargeChance;
+    }
+
     private void move(TimeLapse timeLapse) {
         if (this.followAgent.isPresent()) {
             this.path = new LinkedList<>(
@@ -317,7 +327,7 @@ public class CNPAgent extends Vehicle implements CommUser {
 
     private boolean inRange(Point p) {
         Point position = this.getPosition().get();
-        double distance = Math.sqrt(Math.pow(position.x - p.x, 2) + Math.pow(position.y - p.y, 2));
+        double distance = sqrt(pow(position.x - p.x, 2) + pow(position.y - p.y, 2));
         return distance < range*2;
     }
 
