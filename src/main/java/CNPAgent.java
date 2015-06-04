@@ -57,6 +57,7 @@ public class CNPAgent extends Vehicle implements CommUser {
     private final static long fullEnergy = 30000;
     private final static int chargingFactor = 100;
     private final static int workersNeeded = 3;
+    private final static long proposalTimeOut = 15000;
 
     CNPAgent(String name, RandomGenerator r) {
         this(name, r, fullEnergy);
@@ -112,7 +113,7 @@ public class CNPAgent extends Vehicle implements CommUser {
         }
 
         if (this.isTaskManager()) {
-            if (this.proposalGiven > 0 && timeLapse.getTime() - this.proposalGiven >= 10000) {
+            if (this.isWaitingForProposals() && timeLapse.getTime() - this.proposalGiven >= proposalTimeOut) {
                 if (this.proposals.isEmpty()) {
                     this.possibleWorkers.clear();
                     this.proposalGiven = 0;
@@ -166,7 +167,7 @@ public class CNPAgent extends Vehicle implements CommUser {
                 this.taskStation = Optional.absent();
             } else if (m.getContents().equals((TaskMessageContents.TaskMessage.WANT_TO_BE_WORKER)) && this.isTaskManager()) {
                 this.possibleWorkers.add(cnpAgent);
-                if (this.possibleWorkers.size() >= workersNeeded) {
+                if (this.possibleWorkers.size() >= workersNeeded && !this.isWaitingForProposals()) {
                     for (CNPAgent worker: this.possibleWorkers) {
                         this.send(TaskMessageContents.TaskMessage.GIVE_PROPOSAL, this.taskManagerTask.get(), worker);
                     }
@@ -448,7 +449,7 @@ public class CNPAgent extends Vehicle implements CommUser {
     public void setCommDevice(CommDeviceBuilder commDeviceBuilder) {
         this.commDeviceBuilder = commDeviceBuilder;
         if (range >= 0) {
-            commDeviceBuilder.setMaxRange(2.5);
+            commDeviceBuilder.setMaxRange(2.2);
         }
         device = Optional.of(commDeviceBuilder
                 .setReliability(reliability)
