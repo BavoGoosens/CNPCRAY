@@ -39,7 +39,7 @@ public class CNPCray {
     public static void main(String[] args) {
         int graphSize = 30;
         int numberOfEmptyConnections = 15;
-        int numberOfAgents = 5;
+        int numberOfAgents = 50;
         final RandomGenerator rng = new MersenneTwister(123);
         final DefaultPDPModel pdpModel = DefaultPDPModel.create();
         final CommModel commModel = CommModel.builder().build();
@@ -51,7 +51,7 @@ public class CNPCray {
                 .build();
 
         for (int i = 0; i < numberOfAgents; i++) {
-            sim.register(new StandardCNPAgent("Agent "+(i+1), sim.getRandomGenerator()));
+            sim.register(new LessGreedyCNPAgent("Agent "+(i+1), sim.getRandomGenerator()));
         }
 
         sim.register(new BatteryStation("Battery station 1", sim.getRandomGenerator(), new Point(0, 15)));

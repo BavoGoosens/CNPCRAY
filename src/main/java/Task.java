@@ -47,7 +47,7 @@ public class Task extends Parcel {
         this.agent = null;
     }
 
-    public boolean isAssigned() {
+    public boolean hasBeenAssigned() {
         return this.agent != null;
     }
 

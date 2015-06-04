@@ -199,7 +199,7 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
                 this.batteryStation = Optional.absent();
                 this.charging = Math.round(energyLoaded / chargingFactor);
                 this.setNextDestination(null);
-            } else if (this.assignedTask.isPresent()) {
+            } else if (this.assignedTask.isPresent() && !this.assignedTask.get().hasBeenAssigned()) {
                 // aangekomen op plaats naar een taal
                 this.carryingTask = this.assignedTask;
                 this.assignedTask = Optional.absent();
@@ -303,17 +303,12 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
     }
 
     protected boolean canAcceptNewTasks(long time) {
-        return (
-                    this.charging < 0 && !this.assignedTask.isPresent() &&
-                    !this.carryingTask.isPresent() && !this.batteryStation.isPresent() &&
-                    !this.taskManagerTask.isPresent() && !this.followAgent.isPresent()
-                )
-                                        ||
-                (
-                        this.isTaskManager() &&
-                        time - this.assignedTaskManager >= taskManagerTimeOut &&
-                        !this.followAgent.isPresent()
-                );
+        boolean base = this.charging < 0 && !this.assignedTask.isPresent() &&
+                !this.carryingTask.isPresent() && !this.batteryStation.isPresent() && !this.followAgent.isPresent();
+        boolean notTask = base && ! this.taskManagerTask.isPresent();
+        boolean taskbase = this.isTaskManager() && time - this.assignedTaskManager >= taskManagerTimeOut;
+        boolean task = taskbase && base;
+        return task || notTask;
     }
 
     protected boolean canBeTaskManager() {
