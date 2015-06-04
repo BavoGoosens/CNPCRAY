@@ -29,6 +29,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
     private int previousSize = -1;
     private int taskCount;
     private String name;
+    private long hurryUp = 500000;
 
     public TaskStation(String name, RandomGenerator rng, Point point, PDPModel pdpModel, RoadModel roadModel){
         this.name = name;
@@ -142,7 +143,11 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
 
     @Override
     public void afterTick(TimeLapse timeLapse) {
-
+        if (taskCount <= 0 && hurryUp >= 0){
+            this.hurryUp -= 1;
+        } else if (hurryUp <= 0){
+            CNPCray.stopSim(this.name);
+        }
     }
 
     @Override

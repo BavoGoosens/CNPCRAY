@@ -17,6 +17,7 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.eclipse.swt.graphics.RGB;
 
+import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.Random;
@@ -33,6 +34,8 @@ public class CNPCray {
 
     static Simulator sim;
 
+    static RoadModel roadModel;
+
     /**
      * @param args - No args.
      */
@@ -43,7 +46,7 @@ public class CNPCray {
         final RandomGenerator rng = new MersenneTwister(123);
         final DefaultPDPModel pdpModel = DefaultPDPModel.create();
         final CommModel commModel = CommModel.builder().build();
-        final RoadModel roadModel = new CNPRoadModel(createGraph(graphSize, numberOfEmptyConnections));
+        roadModel = new CNPRoadModel(createGraph(graphSize, numberOfEmptyConnections));
         sim = Simulator.builder()
                 .addModel(roadModel)
                 .addModel(pdpModel)
@@ -120,10 +123,12 @@ public class CNPCray {
         return emptyConnections;
     }
 
-    static void taskFinished(){
-        taskCount -= 1;
-        if (taskCount <= 0){
+    static List<String> vote = new ArrayList<String>();
+
+    static void stopSim(String voterName){
+        if (!vote.contains(voterName))
+            vote.add(voterName);
+        if (vote.size() >= 4)
             sim.stop();
-        }
     }
 }

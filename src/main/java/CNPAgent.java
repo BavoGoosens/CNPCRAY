@@ -58,7 +58,7 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
     protected final static long fullEnergy = 30000;
     protected final static int chargingFactor = 100;
     protected final static int workersNeeded = 3;
-    protected final static long proposalTimeOut = 3001;
+    protected final static long proposalTimeOut = 2001;
     protected final static long taskManagerTimeOut = 20000000;
     protected final static long taskManagerTaskTimeOut = 1993;
 
@@ -183,7 +183,7 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
     }
 
     protected void move(TimeLapse timeLapse) {
-                if (this.followingThisAgent.isPresent()) {
+        if (this.followingThisAgent.isPresent()) {
             if (this.getEnergyPercentage() < 30) {
                 this.send(TaskMessageContents.TaskMessage.LEAVING, this.followingThisAgent.get());
                 this.followingThisAgent = Optional.absent();
@@ -209,18 +209,24 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
             // De destination is bereikt.
             destinationReached(timeLapse);
         }
-        roadModel.get().followPath(this, this.path, timeLapse);
+        if (!this.path.isEmpty())
+            roadModel.get().followPath(this, this.path, timeLapse);
     }
 
     protected void destinationReached(TimeLapse timeLapse) {
         if (this.batteryStation.isPresent()) {
             // if battery station
             this.energyBeforeCharging = this.energy;
-            long energyLoaded = this.batteryStation.get().loadBattery(this);
-            this.energyToCharge = energyLoaded;
-            this.batteryStation = Optional.absent();
-            this.charging = Math.round(energyLoaded / chargingFactor);
-            this.setNextDestination(null);
+            try {
+                long energyLoaded = this.batteryStation.get().loadBattery(this);
+                this.energyToCharge = energyLoaded;
+                this.batteryStation = Optional.absent();
+                this.charging = Math.round(energyLoaded / chargingFactor);
+                this.setNextDestination(null);
+            } catch (IllegalArgumentException e) {
+                System.out.println("The Mask");
+                this.setNextDestination(this.batteryStation.get().getPosition().get());
+            }
         } else if (this.assignedTask.isPresent() && !this.assignedTask.get().hasBeenAssigned()) {
             // aangekomen op plaats naar een taak
             this.carryingTask = this.assignedTask;
@@ -238,7 +244,6 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
         } else if (this.carryingTask.isPresent()) {
             // aangekomen op eindbestemming
             this.pdpModel.get().deliver(this, this.carryingTask.get(), timeLapse);
-            CNPCray.taskFinished();
             this.carryingTask.get().drop();
             this.carryingTask = Optional.absent();
             this.setNextDestination(null);
@@ -254,13 +259,17 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
             this.destination = Optional.of(destiny);
             this.path = new LinkedList<>(this.roadModel.get().getShortestPathTo(this,
                     destiny));
-        }else {
+        } else {
             if (this.destinationAfterCharging.isPresent()) {
                 //System.out.println("Now going to the destination: " + this.destinationAfterCharging.get());
                 this.destination = this.destinationAfterCharging;
                 this.path = new LinkedList<>(this.roadModel.get().getShortestPathTo(this,
                         this.destination.get()));
                 this.destinationAfterCharging = Optional.absent();
+            } else if (this.isTaskManager()) {
+                this.destination = Optional.of(this.taskManagerTask.get().getPosition());
+                this.path = new LinkedList<>(this.roadModel.get().getShortestPathTo(this,
+                        this.destination.get()));
             } else {
                 this.destination = Optional.of(this.roadModel.get().getRandomPosition(this.rng));
                 this.path = new LinkedList<>(this.roadModel.get().getShortestPathTo(this,
