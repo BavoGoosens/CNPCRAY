@@ -10,7 +10,8 @@ public class TaskMessageContents implements MessageContents {
         TASK_MANAGER_ASSIGNED, TASK_MANAGER_DECLINED,
         WORKER_NEEDED, WANT_TO_BE_WORKER,
         WORKER_ASSIGNED, WORKER_DECLINED,
-        LEAVING, GIVE_PROPOSAL, PROPOSAL
+        LEAVING, GIVE_PROPOSAL, PROPOSAL,
+        GIVE_TASK_MANAGER_TASK, TASK_MANAGER_TASK
     }
 
     private final TaskMessage message;
@@ -19,7 +20,8 @@ public class TaskMessageContents implements MessageContents {
 
     public TaskMessageContents(TaskMessage message) {
         if (message.equals(TaskMessage.TASK_MANAGER_ASSIGNED)
-                || message.equals(TaskMessage.WORKER_ASSIGNED) || message.equals(TaskMessage.GIVE_PROPOSAL)) {
+                || message.equals(TaskMessage.WORKER_ASSIGNED) || message.equals(TaskMessage.GIVE_PROPOSAL)
+                || message.equals(TaskMessage.TASK_MANAGER_TASK)) {
             throw new IllegalStateException("You need to give a task when the message is "+message.toString());
         }
         if (message.equals(TaskMessage.PROPOSAL)) throw new IllegalStateException("You need to give a proposal when the message is "+message.toString());
@@ -38,7 +40,7 @@ public class TaskMessageContents implements MessageContents {
     public TaskMessageContents(TaskMessage message, Task task) {
         if (!message.equals(TaskMessage.TASK_MANAGER_ASSIGNED) &&
                 !message.equals(TaskMessage.WORKER_ASSIGNED) &&
-                !message.equals(TaskMessage.GIVE_PROPOSAL)) {
+                !message.equals(TaskMessage.GIVE_PROPOSAL) && !message.equals(TaskMessage.TASK_MANAGER_TASK)) {
             throw new IllegalStateException("You cannot give a task when the message is "+message.toString());
         }
         this.message = message;

@@ -39,7 +39,7 @@ public class CNPCray {
     public static void main(String[] args) {
         int graphSize = 30;
         int numberOfEmptyConnections = 15;
-        int numberOfAgents = 50;
+        int numberOfAgents = 5;
         final RandomGenerator rng = new MersenneTwister(123);
         final DefaultPDPModel pdpModel = DefaultPDPModel.create();
         final CommModel commModel = CommModel.builder().build();
