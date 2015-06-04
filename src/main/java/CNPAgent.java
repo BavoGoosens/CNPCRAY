@@ -57,7 +57,7 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
     protected final static long fullEnergy = 30000;
     protected final static int chargingFactor = 100;
     protected final static int workersNeeded = 3;
-    protected final static long proposalTimeOut = 15000;
+    protected final static long proposalTimeOut = 5000;
 
     CNPAgent(String name, RandomGenerator r) {
         this(name, r, fullEnergy);
@@ -99,7 +99,6 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
     @Override
     public abstract void tickImpl(TimeLapse timeLapse);
 
-    protected abstract void interpretMessage(Message m, long time);
 
     public boolean isWaitingForProposals() {
         return this.proposalGiven > 0;
@@ -163,6 +162,61 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
         double chargeChance = (100 - this.getEnergyPercentage()) + 0.000000001234;
         return (manhattan + energyCost) * chargeChance;
     }
+
+    protected void interpretMessage(Message m, long time) {
+        CommUser sender = m.getSender();
+        if (sender instanceof TaskStation) {
+            TaskStation taskStation = (TaskStation) sender;
+            if (m.getContents().equals(TaskMessageContents.TaskMessage.TASK_MANAGER_NEEDED) && this.canBeTaskManager()) {
+                this.setNextDestination(taskStation.getPosition().get());
+                this.taskStation = Optional.of(taskStation);
+            }
+        } else if (sender instanceof CNPAgent) {
+            CNPAgent cnpAgent = (CNPAgent) sender;
+            if (m.getContents().equals(TaskMessageContents.TaskMessage.WORKER_NEEDED) && this.canAcceptNewTasks()) {
+                this.send(TaskMessageContents.TaskMessage.WANT_TO_BE_WORKER, sender);
+                this.followAgent = Optional.of(cnpAgent);
+                this.destination = Optional.absent();
+                this.taskStation = Optional.absent();
+            } else if (m.getContents().equals((TaskMessageContents.TaskMessage.WANT_TO_BE_WORKER)) && this.isTaskManager()) {
+                this.possibleWorkers.add(cnpAgent);
+                if (this.possibleWorkers.size() >= this.workersNeeded() && !this.isWaitingForProposals()) {
+                    for (CNPAgent worker: this.possibleWorkers) {
+                        this.send(TaskMessageContents.TaskMessage.GIVE_PROPOSAL, this.taskManagerTask.get(), worker);
+                    }
+                    System.out.println(this.toString() + ": Proposals needed from possible workers. (" + time + ")");
+                    this.proposalGiven = time;
+                    /*CNPAgent worker = this.possibleWorkers.get(0);
+                    this.send(TaskMessageContents.TaskMessage.WORKER_ASSIGNED, this.taskManagerTask.get(), worker);
+                    this.possibleWorkers.remove(0);
+                    for (CNPAgent otherWorker: this.possibleWorkers) {
+                        this.send(TaskMessageContents.TaskMessage.WORKER_DECLINED, otherWorker);
+                    }
+                    this.possibleWorkers.clear();
+                    this.taskManagerTask = Optional.absent();*/
+                }
+            } else if (m.getContents().equals(TaskMessageContents.TaskMessage.GIVE_PROPOSAL) && this.canBeWorkerFor(cnpAgent)) {
+                TaskMessageContents contents = (TaskMessageContents) m.getContents();
+                double proposal = calculateProposal(contents.getTask().getPosition());
+                this.send(TaskMessageContents.TaskMessage.PROPOSAL, proposal, cnpAgent);
+                System.out.println(this.toString() + ": Proposal for " + cnpAgent.toString() + ": " + proposal);
+            } else if (m.getContents().equals(TaskMessageContents.TaskMessage.PROPOSAL) && this.isTaskManager()) {
+                TaskMessageContents contents = (TaskMessageContents) m.getContents();
+                double proposal = contents.getProposal();
+                this.proposals.put(cnpAgent, proposal);
+            }
+            else if (m.getContents().equals(TaskMessageContents.TaskMessage.LEAVING) && this.isTaskManager()) {
+                this.possibleWorkers.remove(cnpAgent);
+            } else if (m.getContents().equals(TaskMessageContents.TaskMessage.WORKER_ASSIGNED) && this.canBeWorkerFor(cnpAgent)) {
+                TaskMessageContents contents = (TaskMessageContents) m.getContents();
+                this.assignTask(contents.getTask());
+            } else if (m.getContents().equals(TaskMessageContents.TaskMessage.WORKER_DECLINED)) {
+                this.followAgent = Optional.absent();
+            }
+        }
+    }
+
+    protected abstract int workersNeeded();
 
     protected abstract void move(TimeLapse timeLapse);
 
