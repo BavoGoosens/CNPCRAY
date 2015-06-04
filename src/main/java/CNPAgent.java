@@ -57,7 +57,7 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
     protected final static long fullEnergy = 30000;
     protected final static int chargingFactor = 100;
     protected final static int workersNeeded = 3;
-    protected final static long proposalTimeOut = 15000;
+    protected final static long proposalTimeOut = 1001;
 
     CNPAgent(String name, RandomGenerator r) {
         this(name, r, fullEnergy);
@@ -72,7 +72,7 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
         this.device = Optional.absent();
         this.path = new LinkedList<>();
 
-        this.range = this.rng.nextDouble();
+        this.range = 2;
         this.reliability = 1;
         setCapacity(1);
     }
@@ -184,7 +184,7 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
     protected boolean inRange(Point p) {
         Point position = this.getPosition().get();
         double distance = sqrt(pow(position.x - p.x, 2) + pow(position.y - p.y, 2));
-        return distance < range*2;
+        return distance < this.range;
     }
 
     public abstract void declareTaskManager(Task task);
@@ -240,7 +240,7 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
     public void setCommDevice(CommDeviceBuilder commDeviceBuilder) {
         this.commDeviceBuilder = commDeviceBuilder;
         if (range >= 0) {
-            commDeviceBuilder.setMaxRange(2.2);
+            commDeviceBuilder.setMaxRange(2);
         }
         device = Optional.of(commDeviceBuilder
                 .setReliability(reliability)

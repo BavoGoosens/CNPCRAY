@@ -69,7 +69,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
     public void tick(TimeLapse timeLapse) {
         this.retransmission -= 1;
         double toss = rng.nextDouble();
-        if (toss >= 0 && toss <= 0.0001 && this.taskCount > 0){
+        if (toss >= 0 && toss <= 0.001 && this.taskCount > 0){
             //RandomLy generate new Tasks
             Point ori =this.roadModel.get().getRandomPosition(rng);
             Task t = new Task(ori, this.position, 10, this);
