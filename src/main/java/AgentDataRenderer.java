@@ -74,7 +74,13 @@ public class AgentDataRenderer implements ModelRenderer{
                 } else {
                     text = "???";
                 }
-                gc.drawText(text, offsetX, offsetY, true);
+                if (cnpAgent.isWaitingForProposals()) {
+                    if (l % 600 == 0) {
+                        gc.drawText(text, offsetX, offsetY, true);
+                    }
+                } else {
+                    gc.drawText(text, offsetX, offsetY, true);
+                }
             } else if (cnpAgent.isExecutingTask()){
                 gc.drawText("[p]", offsetX, offsetY, true);
             } else if (cnpAgent.isGoingToTaskStation()) {

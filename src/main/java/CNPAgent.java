@@ -169,6 +169,7 @@ public class CNPAgent extends Vehicle implements CommUser {
                     for (CNPAgent worker: this.possibleWorkers) {
                         this.send(TaskMessageContents.TaskMessage.GIVE_PROPOSAL, this.taskManagerTask.get(), worker);
                     }
+                    System.out.println(this.toString()+": Proposals needed from possible workers.");
                     this.proposalGiven = time;
                     /*CNPAgent worker = this.possibleWorkers.get(0);
                     this.send(TaskMessageContents.TaskMessage.WORKER_ASSIGNED, this.taskManagerTask.get(), worker);
@@ -198,6 +199,10 @@ public class CNPAgent extends Vehicle implements CommUser {
                 this.followAgent = Optional.absent();
             }
         }
+    }
+
+    public boolean isWaitingForProposals() {
+        return this.proposalGiven > 0;
     }
 
     public boolean isExecutingTask() {
