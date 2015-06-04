@@ -120,6 +120,22 @@ public class CNPAgent extends Vehicle implements CommUser {
                 } else {
                     double bestProposal = Double.MAX_VALUE;
                     CNPAgent bestAgent = null;
+                    for (CNPAgent agent: this.proposals.keySet()) {
+                        double proposal = this.proposals.get(agent);
+                        if (proposal < bestProposal) {
+                            bestAgent = agent;
+                        }
+                    }
+                    this.send(TaskMessageContents.TaskMessage.WORKER_ASSIGNED, this.taskManagerTask.get(), bestAgent);
+                    this.possibleWorkers.remove(0);
+                    for (CNPAgent otherWorker: this.possibleWorkers) {
+                        this.send(TaskMessageContents.TaskMessage.WORKER_DECLINED, otherWorker);
+                    }
+                    System.out.println(this.toString()+": "+bestAgent.toString()+" assigned as worker.");
+                    this.possibleWorkers.clear();
+                    this.proposals.clear();
+                    this.proposalGiven = 0;
+                    this.taskManagerTask = Optional.absent();
                 }
             }
             if (this.possibleWorkers.size() < workersNeeded) {
