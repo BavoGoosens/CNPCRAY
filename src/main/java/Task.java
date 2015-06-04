@@ -16,6 +16,7 @@ public class Task extends Parcel {
     private final Point origin;
     private CNPAgent agent = null;
     private TaskStation taskStation;
+    private boolean isDelivered = false;
 
     public Task(Point origin, Point destination, long pickupDuration, TaskStation orderingTaskStation) {
         super(destination, pickupDuration, TimeWindow.ALWAYS, pickupDuration, TimeWindow.ALWAYS, 1);
@@ -44,11 +45,21 @@ public class Task extends Parcel {
     }
 
     public void drop() {
+        this.isDelivered = true;
         this.agent = null;
     }
 
     public boolean hasBeenAssigned() {
         return this.agent != null;
+    }
+
+    public boolean exists() {
+        try {
+            this.getRoadModel().getPosition(this);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 
     @Override

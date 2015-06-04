@@ -117,6 +117,9 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
         }
 
         if (this.isTaskManager()) {
+            if (!this.taskManagerTask.get().exists()) {
+                System.out.println("test");
+            }
             if (this.isWaitingForProposals() && timeLapse.getTime() - this.proposalGiven >= proposalTimeOut) {
                 if (this.proposals.isEmpty()) {
                     this.possibleWorkers.clear();
@@ -141,9 +144,6 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
                                 "but wait for task manager task first.");
                         this.startedWaitingForTaskManagerTask = timeLapse.getTime();
                     } else {
-                        if (this.taskManagerTask.get().hasBeenAssigned()) {
-                            System.out.println("Test");
-                        }
                         this.send(TaskMessageContents.TaskMessage.WORKER_ASSIGNED, this.taskManagerTask.get(), bestAgent);
                         System.out.println(this.toString() + ": " + bestAgent.toString() + " assigned as worker (chosen out of " + this.proposals.size() + " proposals).");
                         this.taskManagerTask = Optional.absent();
@@ -279,11 +279,7 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
              */
             this.taskStation = Optional.absent();
             this.followAgent = Optional.absent();
-            try {
-                this.setNextDestination(task.getPosition());
-            } catch (IllegalArgumentException e) {
-                System.out.println("test");
-            }
+            this.setNextDestination(task.getPosition());
 
         } else
             throw new IllegalStateException("WHAT NU WEER");
@@ -413,9 +409,6 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
                 this.followAgent = Optional.absent();
             } else if (m.getContents().equals(TaskMessageContents.TaskMessage.GIVE_TASK_MANAGER_TASK) &&
                     this.isTaskManager() && this.canBeWorkerFor(cnpAgent)) {
-                if (this.taskManagerTask.get().hasBeenAssigned()) {
-                    System.out.println("Test");
-                }
                 this.send(TaskMessageContents.TaskMessage.TASK_MANAGER_TASK, this.taskManagerTask.get(), cnpAgent);
             } else if (m.getContents().equals(TaskMessageContents.TaskMessage.TASK_MANAGER_TASK) && cnpAgent.isTaskManager() && this.isTaskManager()) {
                 System.out.println(this.toString()+": Task from "+cnpAgent.toString()+" received. Can now be assigned as worker. I take over his task.");
