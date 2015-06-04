@@ -8,10 +8,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.math3.random.RandomGenerator;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
 
 /**
  * Created by bavo and michiel
@@ -23,6 +20,7 @@ public class CNPAgent extends Vehicle implements CommUser {
     private Optional<CommDevice> device;
     private Optional<Point> destination;
     private Queue<Point> path;
+    private CommDeviceBuilder commDeviceBuilder;
 
     private final double range;
     private final double reliability;
@@ -37,8 +35,10 @@ public class CNPAgent extends Vehicle implements CommUser {
     private Optional<Task> carryingTask = Optional.absent();
     private Optional<Task> taskManagerTask = Optional.absent();
     private Optional<CNPAgent> followAgent = Optional.absent();
+    private long proposalGiven = 0;
 
     private List<CNPAgent> possibleWorkers = new ArrayList<>();
+    private Map<CNPAgent, Double> proposals = new HashMap<>();
 
     private long energy;
     private long charging = -1;
@@ -105,19 +105,31 @@ public class CNPAgent extends Vehicle implements CommUser {
         }
 
         for (Message m: this.device.get().getUnreadMessages()) {
-            interpretMessage(m);
+            interpretMessage(m, timeLapse.getTime());
         }
 
-        if (this.taskManagerTask.isPresent() && this.possibleWorkers.size() < workersNeeded) {
-            this.retransmission--;
-            if (this.retransmission < 0) {
-                this.retransmission = 100;
-                this.broadcast(TaskMessageContents.TaskMessage.WORKER_NEEDED);
+        if (this.isTaskManager()) {
+            if (this.proposalGiven > 0 && timeLapse.getTime() - this.proposalGiven >= 100) {
+                if (this.proposals.isEmpty()) {
+                    this.possibleWorkers.clear();
+                    this.proposalGiven = 0;
+                    System.out.println(this.toString()+": No proposals returned. Search for new workers.");
+                } else {
+                    double bestProposal = Double.MAX_VALUE;
+                    CNPAgent bestAgent = null;
+                }
+            }
+            if (this.possibleWorkers.size() < workersNeeded) {
+                this.retransmission--;
+                if (this.retransmission < 0) {
+                    this.retransmission = 100;
+                    this.broadcast(TaskMessageContents.TaskMessage.WORKER_NEEDED);
+                }
             }
         }
     }
 
-    private void interpretMessage(Message m) {
+    private void interpretMessage(Message m, long time) {
         CommUser sender = m.getSender();
         if (sender instanceof TaskStation) {
             TaskStation taskStation = (TaskStation) sender;
@@ -135,16 +147,30 @@ public class CNPAgent extends Vehicle implements CommUser {
             } else if (m.getContents().equals((TaskMessageContents.TaskMessage.WANT_TO_BE_WORKER)) && this.isTaskManager()) {
                 this.possibleWorkers.add(cnpAgent);
                 if (this.possibleWorkers.size() >= workersNeeded) {
-                    CNPAgent worker = this.possibleWorkers.get(0);
+                    for (CNPAgent worker: this.possibleWorkers) {
+                        this.send(TaskMessageContents.TaskMessage.GIVE_PROPOSAL, this.taskManagerTask.get(), worker);
+                    }
+                    this.proposalGiven = time;
+                    /*CNPAgent worker = this.possibleWorkers.get(0);
                     this.send(TaskMessageContents.TaskMessage.WORKER_ASSIGNED, this.taskManagerTask.get(), worker);
                     this.possibleWorkers.remove(0);
                     for (CNPAgent otherWorker: this.possibleWorkers) {
                         this.send(TaskMessageContents.TaskMessage.WORKER_DECLINED, otherWorker);
                     }
                     this.possibleWorkers.clear();
-                    this.taskManagerTask = Optional.absent();
+                    this.taskManagerTask = Optional.absent();*/
                 }
-            } else if (m.getContents().equals(TaskMessageContents.TaskMessage.LEAVING) && this.isTaskManager()) {
+            } else if (m.getContents().equals(TaskMessageContents.TaskMessage.GIVE_PROPOSAL) && this.canBeWorkerFor(cnpAgent)) {
+                TaskMessageContents contents = (TaskMessageContents) m.getContents();
+                double proposal = calculateProposal(contents.getTask().getPosition());
+                this.send(TaskMessageContents.TaskMessage.PROPOSAL, proposal, cnpAgent);
+                System.out.println(this.toString()+": Proposal for "+cnpAgent.toString()+": "+proposal);
+            } else if (m.getContents().equals(TaskMessageContents.TaskMessage.PROPOSAL) && this.isTaskManager()) {
+                TaskMessageContents contents = (TaskMessageContents) m.getContents();
+                double proposal = contents.getProposal();
+                this.proposals.put(cnpAgent, proposal);
+            }
+            else if (m.getContents().equals(TaskMessageContents.TaskMessage.LEAVING) && this.isTaskManager()) {
                 this.possibleWorkers.remove(cnpAgent);
             } else if (m.getContents().equals(TaskMessageContents.TaskMessage.WORKER_ASSIGNED) && this.canBeWorkerFor(cnpAgent)) {
                 TaskMessageContents contents = (TaskMessageContents) m.getContents();
@@ -358,6 +384,11 @@ public class CNPAgent extends Vehicle implements CommUser {
         this.send(contents, recipient);
     }
 
+    private void send(TaskMessageContents.TaskMessage message, double proposal, CommUser recipient) {
+        TaskMessageContents contents = new TaskMessageContents(message, proposal);
+        this.send(contents, recipient);
+    }
+
     private void broadcast(TaskMessageContents contents) {
         if (this.getEnergy() - broadcastCost >= 0) {
             this.device.get().broadcast(contents);
@@ -383,8 +414,9 @@ public class CNPAgent extends Vehicle implements CommUser {
 
     @Override
     public void setCommDevice(CommDeviceBuilder commDeviceBuilder) {
+        this.commDeviceBuilder = commDeviceBuilder;
         if (range >= 0) {
-            commDeviceBuilder.setMaxRange(2);
+            commDeviceBuilder.setMaxRange(2.5);
         }
         device = Optional.of(commDeviceBuilder
                 .setReliability(reliability)

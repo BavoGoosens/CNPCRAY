@@ -10,27 +10,45 @@ public class TaskMessageContents implements MessageContents {
         TASK_MANAGER_ASSIGNED, TASK_MANAGER_DECLINED,
         WORKER_NEEDED, WANT_TO_BE_WORKER,
         WORKER_ASSIGNED, WORKER_DECLINED,
-        LEAVING
+        LEAVING, GIVE_PROPOSAL, PROPOSAL
     }
 
     private final TaskMessage message;
     private final Task task;
+    private final double proposal;
 
     public TaskMessageContents(TaskMessage message) {
-        this(message, null);
         if (message.equals(TaskMessage.TASK_MANAGER_ASSIGNED)
-                || message.equals(TaskMessage.WORKER_ASSIGNED)) {
+                || message.equals(TaskMessage.WORKER_ASSIGNED) || message.equals(TaskMessage.GIVE_PROPOSAL)) {
             throw new IllegalStateException("You need to give a task when the message is "+message.toString());
         }
+        if (message.equals(TaskMessage.PROPOSAL)) throw new IllegalStateException("You need to give a proposal when the message is "+message.toString());
+        this.message = message;
+        this.task = null;
+        this.proposal = -1;
+    }
+
+    public TaskMessageContents(TaskMessage message, double proposal) {
+        if (!message.equals(TaskMessage.PROPOSAL)) throw new IllegalStateException("You cannot give a proposal when the message is "+message.toString());
+        this.proposal = proposal;
+        this.message = message;
+        this.task = null;
     }
 
     public TaskMessageContents(TaskMessage message, Task task) {
+        if (!message.equals(TaskMessage.TASK_MANAGER_ASSIGNED) &&
+                !message.equals(TaskMessage.WORKER_ASSIGNED) &&
+                !message.equals(TaskMessage.GIVE_PROPOSAL)) {
+            throw new IllegalStateException("You cannot give a task when the message is "+message.toString());
+        }
         this.message = message;
         this.task = task;
+        this.proposal = -1;
     }
 
     public TaskMessage getMessage() { return this.message; }
     public Task getTask() { return this.task; }
+    public double getProposal() { return this.proposal; }
 
     @Override
     public boolean equals(Object otherObject) {
