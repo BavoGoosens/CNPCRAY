@@ -112,22 +112,23 @@ public class CNPAgent extends Vehicle implements CommUser {
         }
 
         if (this.isTaskManager()) {
-            if (this.proposalGiven > 0 && timeLapse.getTime() - this.proposalGiven >= 100) {
+            if (this.proposalGiven > 0 && timeLapse.getTime() - this.proposalGiven >= 10000) {
                 if (this.proposals.isEmpty()) {
                     this.possibleWorkers.clear();
                     this.proposalGiven = 0;
-                    System.out.println(this.toString()+": No proposals returned. Search for new workers.");
+                    System.out.println(this.toString()+": No proposals returned. Search for new workers. ("+timeLapse.getTime()+")");
                 } else {
                     double bestProposal = Double.MAX_VALUE;
                     CNPAgent bestAgent = null;
                     for (CNPAgent agent: this.proposals.keySet()) {
                         double proposal = this.proposals.get(agent);
                         if (proposal < bestProposal) {
+                            bestProposal = proposal;
                             bestAgent = agent;
                         }
                     }
                     this.send(TaskMessageContents.TaskMessage.WORKER_ASSIGNED, this.taskManagerTask.get(), bestAgent);
-                    this.possibleWorkers.remove(0);
+                    this.possibleWorkers.remove(bestAgent);
                     for (CNPAgent otherWorker: this.possibleWorkers) {
                         this.send(TaskMessageContents.TaskMessage.WORKER_DECLINED, otherWorker);
                     }
@@ -169,7 +170,7 @@ public class CNPAgent extends Vehicle implements CommUser {
                     for (CNPAgent worker: this.possibleWorkers) {
                         this.send(TaskMessageContents.TaskMessage.GIVE_PROPOSAL, this.taskManagerTask.get(), worker);
                     }
-                    System.out.println(this.toString()+": Proposals needed from possible workers.");
+                    System.out.println(this.toString()+": Proposals needed from possible workers. ("+time+")");
                     this.proposalGiven = time;
                     /*CNPAgent worker = this.possibleWorkers.get(0);
                     this.send(TaskMessageContents.TaskMessage.WORKER_ASSIGNED, this.taskManagerTask.get(), worker);
