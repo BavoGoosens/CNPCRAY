@@ -54,7 +54,7 @@ public class CNPCray {
                 .build();
 
         for (int i = 0; i < numberOfAgents; i++) {
-            sim.register(new LessGreedyCNPAgent("Agent "+(i+1), sim.getRandomGenerator()));
+            sim.register(new StandardCNPAgent("Agent "+(i+1), sim.getRandomGenerator()));
         }
 
         sim.register(new BatteryStation("Battery station 1", sim.getRandomGenerator(), new Point(0, 15)));

@@ -29,6 +29,8 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
     private int previousSize = -1;
     private int taskCount;
     private String name;
+    public boolean fixedratio = false;
+    private int taskManagerRatio = 3;
     private long hurryUp = 500000;
 
     public TaskStation(String name, RandomGenerator rng, Point point, PDPModel pdpModel, RoadModel roadModel){
@@ -40,7 +42,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
         device = Optional.absent();
         range = rng.nextDouble();
         reliability = rng.nextDouble();
-        this.taskCount = 100;
+        this.taskCount = 200;
     }
 
     @Override
@@ -112,13 +114,17 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
         }*/
         // if there are tasks left and there is no response in the given timeframe
         // rebroadcast
-        if (this.retransmission <= 0 && this.stillToBeAssignedTasks.size() > 0){
+        if (this.retransmission <= 0 && this.stillToBeAssignedTasks.size() > 0 &&ratioOn()){
             this.retransmission = 100;
             this.device.get().broadcast(
                     new TaskMessageContents(TaskMessageContents.TaskMessage.TASK_MANAGER_NEEDED)
             );
         }
 
+    }
+
+    private boolean ratioOn(){
+        return !fixedratio || (fixedratio && this.taskManagerRatio >= 0);
     }
 
     public boolean searchForTaskManager(Task task, long time) {
@@ -132,6 +138,8 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
                     agent.declareTaskManager(task, time);
                     assigned = true;
                     System.out.println(this.toString()+": "+agent.toString()+" assigned task manager.");
+                    if (this.fixedratio)
+                        this.taskManagerRatio -= 1;
                     break;
                 } catch(IllegalStateException e) {
                     System.out.println(e.getMessage());
@@ -153,5 +161,9 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
     @Override
     public String toString() {
         return this.name;
+    }
+
+    public void taskDone() {
+        this.taskManagerRatio += 1;
     }
 }

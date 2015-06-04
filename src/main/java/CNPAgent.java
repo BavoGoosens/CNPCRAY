@@ -244,6 +244,8 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
         } else if (this.carryingTask.isPresent()) {
             // aangekomen op eindbestemming
             this.pdpModel.get().deliver(this, this.carryingTask.get(), timeLapse);
+            if (this.carryingTask.get().getTaskStation().fixedratio)
+                this.carryingTask.get().getTaskStation().taskDone();
             this.carryingTask.get().drop();
             this.carryingTask = Optional.absent();
             this.setNextDestination(null);
@@ -266,7 +268,7 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
                 this.path = new LinkedList<>(this.roadModel.get().getShortestPathTo(this,
                         this.destination.get()));
                 this.destinationAfterCharging = Optional.absent();
-            } else if (this.isTaskManager()) {
+            } else if (this.isTaskManager() && this.taskManagerTask.get().exists()) {
                 this.destination = Optional.of(this.taskManagerTask.get().getPosition());
                 this.path = new LinkedList<>(this.roadModel.get().getShortestPathTo(this,
                         this.destination.get()));

@@ -17,6 +17,7 @@ public class Task extends Parcel {
     private CNPAgent agent = null;
     private TaskStation taskStation;
     private boolean isDelivered = false;
+    private int hop;
 
     public Task(Point origin, Point destination, long pickupDuration, TaskStation orderingTaskStation) {
         super(destination, pickupDuration, TimeWindow.ALWAYS, pickupDuration, TimeWindow.ALWAYS, 1);
@@ -47,6 +48,14 @@ public class Task extends Parcel {
     public void drop() {
         this.isDelivered = true;
         this.agent = null;
+    }
+    
+    public void hop(){
+        this.hop -= 1; 
+    }
+    
+    public boolean canHop(){
+        return this.hop >= 0;
     }
 
     public boolean hasBeenAssigned() {
