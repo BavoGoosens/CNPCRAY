@@ -35,6 +35,6 @@ public class LessGreedyCNPAgent extends CNPAgent {
 
     @Override
     protected int workersNeeded() {
-        return PropagateCNPAgent.workersNeeded;
+        return LessGreedyCNPAgent.workersNeeded;
     }
 }

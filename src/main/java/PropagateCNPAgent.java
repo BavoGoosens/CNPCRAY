@@ -23,6 +23,8 @@ import static java.lang.Math.sqrt;
  */
 public class PropagateCNPAgent extends CNPAgent {
 
+    private static final int workersNeeded = 3;
+
     PropagateCNPAgent(String name, RandomGenerator r) {
         this(name, r, fullEnergy);
     }

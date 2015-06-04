@@ -82,7 +82,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
             this.taskCount--;
         }
 
-        if (this.stillToBeAssignedTasks.size() != this.previousSize) {
+       /* if (this.stillToBeAssignedTasks.size() != this.previousSize) {
             previousSize = this.stillToBeAssignedTasks.size();
             if (this.stillToBeAssignedTasks.size() > 0) {
                 System.out.println(this.toString()+": Searching task manager for "
@@ -90,10 +90,10 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
             } else {
                 System.out.println(this.toString()+": No tasks available. Not searching or broadcasting.");
             }
-        }
+        }*/
         List<Integer> assignedTasks = new ArrayList<Integer>();
         for (int i = 0; i < this.stillToBeAssignedTasks.size(); i++) {
-            if (this.searchForTaskManager(this.stillToBeAssignedTasks.get(i))) {
+            if (this.searchForTaskManager(this.stillToBeAssignedTasks.get(i), timeLapse.getTime())) {
                 assignedTasks.add(i);
             }
         }
@@ -120,7 +120,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
 
     }
 
-    public boolean searchForTaskManager(Task task) {
+    public boolean searchForTaskManager(Task task, long time) {
         boolean assigned = false;
         for (Message message: this.device.get().getUnreadMessages()) {
             CommUser sender = message.getSender();
@@ -128,7 +128,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
                     message.getContents().equals(TaskMessageContents.TaskMessage.WANT_TO_BE_TASK_MANAGER)) {
                 CNPAgent agent = (CNPAgent) sender;
                 try {
-                    agent.declareTaskManager(task);
+                    agent.declareTaskManager(task, time);
                     assigned = true;
                     System.out.println(this.toString()+": "+agent.toString()+" assigned task manager.");
                     break;
