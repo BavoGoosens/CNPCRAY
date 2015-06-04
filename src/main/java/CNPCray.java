@@ -29,6 +29,10 @@ import static com.google.common.collect.Lists.newArrayList;
 public class CNPCray {
     private static final double VEHICLE_LENGTH = 2d;
 
+    static int taskCount = 400;
+
+    static Simulator sim;
+
     /**
      * @param args - No args.
      */
@@ -40,7 +44,7 @@ public class CNPCray {
         final DefaultPDPModel pdpModel = DefaultPDPModel.create();
         final CommModel commModel = CommModel.builder().build();
         final RoadModel roadModel = new CNPRoadModel(createGraph(graphSize, numberOfEmptyConnections));
-        final Simulator sim = Simulator.builder()
+        sim = Simulator.builder()
                 .addModel(roadModel)
                 .addModel(pdpModel)
                 .addModel(commModel)
@@ -114,5 +118,12 @@ public class CNPCray {
             emptyConnections.add(random.nextInt(n));
         }
         return emptyConnections;
+    }
+
+    static void taskFinished(){
+        taskCount -= 1;
+        if (taskCount <= 0){
+            sim.stop();
+        }
     }
 }

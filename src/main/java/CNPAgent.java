@@ -50,7 +50,7 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
 
     protected int retransmission = 0;
 
-    protected final static double speed = 50.0D;
+    protected final static double speed = 50;
     protected final static long moveCost = 3;
     protected final static long sendCost = 0;
     protected final static long broadcastCost = 0;
@@ -202,6 +202,7 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
             } else if (this.carryingTask.isPresent()) {
                 // aangekomen op eindbestemming
                 this.pdpModel.get().deliver(this, this.carryingTask.get(), timeLapse);
+                CNPCray.taskFinished();
                 this.carryingTask.get().drop();
                 this.carryingTask = Optional.absent();
                 this.setNextDestination(null);
