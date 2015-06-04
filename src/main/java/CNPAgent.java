@@ -1,8 +1,5 @@
 import com.github.rinde.rinsim.core.TimeLapse;
-import com.github.rinde.rinsim.core.model.comm.CommDevice;
-import com.github.rinde.rinsim.core.model.comm.CommDeviceBuilder;
-import com.github.rinde.rinsim.core.model.comm.CommUser;
-import com.github.rinde.rinsim.core.model.comm.Message;
+import com.github.rinde.rinsim.core.model.comm.*;
 import com.github.rinde.rinsim.core.model.pdp.PDPModel;
 import com.github.rinde.rinsim.core.model.pdp.Vehicle;
 import com.github.rinde.rinsim.core.model.road.RoadModel;
@@ -52,6 +49,8 @@ public class CNPAgent extends Vehicle implements CommUser {
 
     private final static double speed = 50.0D;
     private final static long moveCost = 3;
+    private final static long sendCost = 0;
+    private final static long broadcastCost = 0;
     private final static long fullEnergy = 30000;
     private final static int chargingFactor = 100;
     private final static int workersNeeded = 3;
@@ -95,83 +94,64 @@ public class CNPAgent extends Vehicle implements CommUser {
 
     @Override
     public void tickImpl(TimeLapse timeLapse) {
+
         if (this.charging >= 0) {
+            // if charging: wait and do nothing
             this.charging--;
         } else if (this.energy - moveCost >= 0) {
+            // if enough energy: move to destination
             this.move(timeLapse);
             this.decreaseEnergyWith(moveCost);
         }
-        if (this.device.get().getUnreadCount() > 0){
-            ImmutableList<Message> received = this.device.get().getUnreadMessages();
-            Message m = received.get(0);
-            CommUser sender = m.getSender();
-            if (sender.getClass().equals(TaskStation.class)) {
-                TaskStation task = (TaskStation) sender;
-                Point taskpos = this.roadModel.get().getPosition(task);
-                if (this.canAcceptNewTasks()) {
-                    this.setNextDestination(taskpos);
-                    this.taskStation = Optional.of(task);
-                }
-            } else if (sender.getClass().equals(CNPAgent.class)) {
-                CNPAgent cnpAgent = (CNPAgent) sender;
-                if (m.getContents().equals(TaskMessageContents.TaskMessage.WORKER_NEEDED)) {
-                    // bid for task
-                    if (this.canAcceptNewTasks()) {
-                        System.out.println(this.toString() + ": Message received from task manager: "
-                                + cnpAgent.toString() + ". Bid for task.");
-                        this.device.get().send(
-                                new TaskMessageContents(TaskMessageContents.TaskMessage.WANT_TO_BE_WORKER),
-                                sender
-                        );
-                        this.followAgent = Optional.of(cnpAgent);
-                        this.destination = Optional.absent();
-                        this.taskStation = Optional.absent();
-                    }
-                } else if (m.getContents().equals((TaskMessageContents.TaskMessage.WANT_TO_BE_WORKER))
-                        && this.taskManagerTask.isPresent()) {
-                    this.possibleWorkers.add(cnpAgent);
-                    if (this.possibleWorkers.size() >= workersNeeded) {
-                        CNPAgent worker = this.possibleWorkers.get(0);
-                        this.device.get().send(
-                                new TaskMessageContents(TaskMessageContents.TaskMessage.WORKER_ASSIGNED, this.taskManagerTask.get()),
-                                worker
-                        );
-                        this.possibleWorkers.remove(0);
-                        for (CNPAgent otherWorker: this.possibleWorkers) {
-                            this.device.get().send(
-                                    new TaskMessageContents(TaskMessageContents.TaskMessage.WORKER_DECLINED),
-                                    otherWorker
-                            );
-                        }
-                        this.possibleWorkers.clear();
-                        this.taskManagerTask = Optional.absent();
-                    }
 
-                } else if (m.getContents().equals(TaskMessageContents.TaskMessage.WORKER_ASSIGNED)) {
-                    TaskMessageContents contents = (TaskMessageContents) m.getContents();
-                    this.assignTask(contents.getTask());
-                } else if (m.getContents().equals(TaskMessageContents.TaskMessage.WORKER_DECLINED)) {
-                    this.followAgent = Optional.absent();
-                } else if (m.getContents().equals(TaskMessageContents.TaskMessage.LEAVING)) {
-                    this.possibleWorkers.remove(cnpAgent);
-                }
-            }
+        for (Message m: this.device.get().getUnreadMessages()) {
+            interpretMessage(m);
         }
+
         if (this.taskManagerTask.isPresent() && this.possibleWorkers.size() < workersNeeded) {
             this.retransmission--;
             if (this.retransmission < 0) {
                 this.retransmission = 100;
-                this.device.get().broadcast(
-                        new TaskMessageContents(TaskMessageContents.TaskMessage.WORKER_NEEDED)
-                );
+                this.broadcast(TaskMessageContents.TaskMessage.WORKER_NEEDED);
             }
         }
     }
 
-    public void bid(CNPAgent agent) {
-        if (this.taskManagerTask.isPresent()) {
-            agent.assignTask(this.taskManagerTask.get());
-            this.taskManagerTask = Optional.absent();
+    private void interpretMessage(Message m) {
+        CommUser sender = m.getSender();
+        if (sender instanceof TaskStation) {
+            TaskStation taskStation = (TaskStation) sender;
+            if (m.getContents().equals(TaskMessageContents.TaskMessage.TASK_MANAGER_NEEDED) && this.canBeTaskManager()) {
+                this.setNextDestination(taskStation.getPosition().get());
+                this.taskStation = Optional.of(taskStation);
+            }
+        } else if (sender instanceof CNPAgent) {
+            CNPAgent cnpAgent = (CNPAgent) sender;
+            if (m.getContents().equals(TaskMessageContents.TaskMessage.WORKER_NEEDED) && this.canAcceptNewTasks()) {
+                this.send(TaskMessageContents.TaskMessage.WANT_TO_BE_WORKER, sender);
+                this.followAgent = Optional.of(cnpAgent);
+                this.destination = Optional.absent();
+                this.taskStation = Optional.absent();
+            } else if (m.getContents().equals((TaskMessageContents.TaskMessage.WANT_TO_BE_WORKER)) && this.isTaskManager()) {
+                this.possibleWorkers.add(cnpAgent);
+                if (this.possibleWorkers.size() >= workersNeeded) {
+                    CNPAgent worker = this.possibleWorkers.get(0);
+                    this.send(TaskMessageContents.TaskMessage.WORKER_ASSIGNED, this.taskManagerTask.get(), worker);
+                    this.possibleWorkers.remove(0);
+                    for (CNPAgent otherWorker: this.possibleWorkers) {
+                        this.send(TaskMessageContents.TaskMessage.WORKER_DECLINED, otherWorker);
+                    }
+                    this.possibleWorkers.clear();
+                    this.taskManagerTask = Optional.absent();
+                }
+            } else if (m.getContents().equals(TaskMessageContents.TaskMessage.LEAVING) && this.isTaskManager()) {
+                this.possibleWorkers.remove(cnpAgent);
+            } else if (m.getContents().equals(TaskMessageContents.TaskMessage.WORKER_ASSIGNED) && this.canBeWorkerFor(cnpAgent)) {
+                TaskMessageContents contents = (TaskMessageContents) m.getContents();
+                this.assignTask(contents.getTask());
+            } else if (m.getContents().equals(TaskMessageContents.TaskMessage.WORKER_DECLINED)) {
+                this.followAgent = Optional.absent();
+            }
         }
     }
 
@@ -187,6 +167,10 @@ public class CNPAgent extends Vehicle implements CommUser {
         return this.batteryStation.isPresent();
     }
 
+    public boolean isFollowingATaskManager() {
+        return this.followAgent.isPresent();
+    }
+
     private boolean canAcceptNewTasks() {
         return this.charging < 0 && !this.assignedTask.isPresent()
                 && !this.carryingTask.isPresent() && !this.batteryStation.isPresent()
@@ -195,8 +179,12 @@ public class CNPAgent extends Vehicle implements CommUser {
 
     private boolean canBeTaskManager() {
         return this.charging < 0 && !this.taskStation.isPresent() && !this.assignedTask.isPresent()
-                && !this.carryingTask.isPresent() && !this.batteryStation.isPresent()
+                && !this.carryingTask.isPresent()
                 && !this.taskManagerTask.isPresent() && !this.followAgent.isPresent();
+    }
+
+    private boolean canBeWorkerFor(CNPAgent agent) {
+        return this.followAgent.isPresent() && this.followAgent.get().equals(agent);
     }
 
     public boolean isTaskManager() {
@@ -207,7 +195,7 @@ public class CNPAgent extends Vehicle implements CommUser {
         return this.possibleWorkers.size();
     }
 
-    public double getEnergyPercentage() {
+    public long getEnergyPercentage() {
         if (this.charging >= 0) {
             long alreadyCharged = this.energyToCharge - this.charging*chargingFactor;
             return Math.round(((double) (this.energyBeforeCharging+alreadyCharged) / fullEnergy)*100);
@@ -227,10 +215,7 @@ public class CNPAgent extends Vehicle implements CommUser {
                     )
             );
             if (this.getEnergyPercentage() < 30) {
-                this.device.get().send(
-                        new TaskMessageContents(TaskMessageContents.TaskMessage.LEAVING),
-                        this.followAgent.get()
-                );
+                this.send(TaskMessageContents.TaskMessage.LEAVING, this.followAgent.get());
                 this.followAgent = Optional.absent();
             }
         } else if (!destination.isPresent()) {
@@ -239,10 +224,7 @@ public class CNPAgent extends Vehicle implements CommUser {
         } else if (this.taskStation.isPresent()) {
             // Agent is naar taskstation aan het bewegen en komt in range dus gaat offer maken.
             if (this.inRange(this.taskStation.get().getPosition().get())) {
-                this.device.get().send(
-                        new TaskMessageContents(TaskMessageContents.TaskMessage.WANT_TO_BE_TASK_MANAGER),
-                        this.taskStation.get()
-                );
+                this.send(TaskMessageContents.TaskMessage.WANT_TO_BE_TASK_MANAGER, this.taskStation.get());
                 this.taskStation = Optional.absent();
                 this.setNextDestination(null);
             }
@@ -357,6 +339,35 @@ public class CNPAgent extends Vehicle implements CommUser {
             this.setNextDestination(task.getPosition());
         } else
             throw new IllegalStateException("WHAT NU WEER");
+    }
+
+    private void send(TaskMessageContents contents, CommUser recipient) {
+        this.device.get().send(contents, recipient);
+    }
+
+    private void send(TaskMessageContents.TaskMessage message, CommUser recipient) {
+        if (this.getEnergy() - sendCost >= 0) {
+            TaskMessageContents contents = new TaskMessageContents(message);
+            this.send(contents, recipient);
+            this.decreaseEnergyWith(sendCost);
+        }
+    }
+
+    private void send(TaskMessageContents.TaskMessage message, Task task, CommUser recipient) {
+        TaskMessageContents contents = new TaskMessageContents(message, task);
+        this.send(contents, recipient);
+    }
+
+    private void broadcast(TaskMessageContents contents) {
+        if (this.getEnergy() - broadcastCost >= 0) {
+            this.device.get().broadcast(contents);
+            this.decreaseEnergyWith(broadcastCost);
+        }
+    }
+
+    private void broadcast(TaskMessageContents.TaskMessage message) {
+        TaskMessageContents contents = new TaskMessageContents(message);
+        this.broadcast(contents);
     }
 
     @Override

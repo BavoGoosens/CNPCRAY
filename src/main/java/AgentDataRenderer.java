@@ -25,6 +25,8 @@ public class AgentDataRenderer implements ModelRenderer{
     Optional<RoadModel> roadModel;
     final UiSchema uiSchema;
 
+    private boolean switchOn;
+
     public AgentDataRenderer(){
         roadModel = Optional.absent();
         uiSchema = new UiSchema(false);
@@ -38,7 +40,6 @@ public class AgentDataRenderer implements ModelRenderer{
     @Override
     public void renderDynamic(GC gc, ViewPort viewPort, long l) {
         uiSchema.initialize(gc.getDevice());
-
         final Collection<CNPAgent> agents = ((CNPRoadModel)roadModel.get()).getAgents();
 
         for (final CNPAgent cnpAgent : agents) {
@@ -61,25 +62,25 @@ public class AgentDataRenderer implements ModelRenderer{
             offsetX = x - 15;
             offsetY = y - 27;
             if (cnpAgent.isTaskManager()) {
-                if (l % 600 == 0) {
-                    String text;
-                    if (cnpAgent.getNumberOfPossibleWorkers() == 0) {
-                        text = "---";
-                    } else if (cnpAgent.getNumberOfPossibleWorkers() == 1) {
-                        text = "*--";
-                    } else if (cnpAgent.getNumberOfPossibleWorkers() == 2) {
-                        text = "**-";
-                    } else if (cnpAgent.getNumberOfPossibleWorkers() == 3) {
-                        text = "***";
-                    } else {
-                        text = "???";
-                    }
-                    gc.drawText(text, offsetX, offsetY, true);
+                String text;
+                if (cnpAgent.getNumberOfPossibleWorkers() == 0) {
+                    text = "---";
+                } else if (cnpAgent.getNumberOfPossibleWorkers() == 1) {
+                    text = "*--";
+                } else if (cnpAgent.getNumberOfPossibleWorkers() == 2) {
+                    text = "**-";
+                } else if (cnpAgent.getNumberOfPossibleWorkers() == 3) {
+                    text = "***";
+                } else {
+                    text = "???";
                 }
+                gc.drawText(text, offsetX, offsetY, true);
             } else if (cnpAgent.isExecutingTask()){
-                gc.drawText("+++", offsetX, offsetY, true);
+                gc.drawText("[p]", offsetX, offsetY, true);
             } else if (cnpAgent.isGoingToTaskStation()) {
-                gc.drawText("ttt", offsetX, offsetY, true);
+                gc.drawText("(t)", offsetX, offsetY, true);
+            } else if (cnpAgent.isFollowingATaskManager()) {
+                gc.drawText("<->", offsetX, offsetY, true);
             }
             /*if (cnpAgent.getDestination().isPresent()) {
                 offsetX = x + 0;0
@@ -88,6 +89,11 @@ public class AgentDataRenderer implements ModelRenderer{
             }*/
 
         }
+    }
+
+    private void changeSwitch() {
+        if (switchOn) switchOn = false;
+        else switchOn = true;
     }
 
     @Nullable

@@ -69,7 +69,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
     public void tick(TimeLapse timeLapse) {
         this.retransmission -= 1;
         double toss = rng.nextDouble();
-        if (toss >= 0 && toss <= 0.001 && this.taskCount > 0){
+        if (toss >= 0 && toss <= 0.0001 && this.taskCount > 0){
             //RandomLy generate new Tasks
             Point ori =this.roadModel.get().getRandomPosition(rng);
             Task t = new Task(ori, this.position, 10, this);
@@ -85,7 +85,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
         if (this.stillToBeAssignedTasks.size() != this.previousSize) {
             previousSize = this.stillToBeAssignedTasks.size();
             if (this.stillToBeAssignedTasks.size() > 0) {
-                System.out.println(this.toString()+": Search task manager for "
+                System.out.println(this.toString()+": Searching task manager for "
                         +this.stillToBeAssignedTasks.size()+" tasks. Broadcast messages.");
             } else {
                 System.out.println(this.toString()+": No tasks available. Not searching or broadcasting.");
@@ -130,7 +130,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
                 try {
                     agent.declareTaskManager(task);
                     assigned = true;
-                    System.out.println(this.toString()+": task manager assigned for task "+task.toString());
+                    System.out.println(this.toString()+": "+agent.toString()+" assigned task manager.");
                     break;
                 } catch(IllegalStateException e) {
                     System.out.println(e.getMessage());

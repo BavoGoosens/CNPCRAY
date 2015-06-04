@@ -24,8 +24,10 @@ public class BatteryStation implements CommUser, RoadUser{
     private final double reliability;
     private final Point position;
     private ArrayList<EnergyLoad> energyLoads = new ArrayList<EnergyLoad>();
+    private String name;
 
-    public BatteryStation(RandomGenerator rng, Point p){
+    public BatteryStation(String name, RandomGenerator rng, Point p){
+        this.name = name;
         this.position = p;
         this.rng = rng;
         roadModel = Optional.absent();
@@ -44,7 +46,7 @@ public class BatteryStation implements CommUser, RoadUser{
         }
         long energyLoaded = agent.loadFullBattery();
         this.energyLoads.add(new EnergyLoad(agent, energyLoaded));
-        System.out.println("Charging battery... ("+energyLoaded+" units)");
+        System.out.println(this.toString()+": Charging battery for "+agent.toString()+" ("+energyLoaded+" units).");
         return energyLoaded;
     }
 
@@ -81,5 +83,10 @@ public class BatteryStation implements CommUser, RoadUser{
         /*while (roadModel.get().isOccupied(p = model.getRandomPosition(rng))) {}*/
         p = roadModel.getRandomPosition(rng);
         this.roadModel.get().addObjectAt(this, this.position);
+    }
+
+    @Override
+    public String toString() {
+        return this.name;
     }
 }

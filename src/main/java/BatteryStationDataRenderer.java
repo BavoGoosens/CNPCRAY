@@ -49,12 +49,9 @@ public class BatteryStationDataRenderer implements ModelRenderer{
             final Point pos = station.getPosition().get();
             final int x = viewPort.toCoordX(pos.x);
             final int y = viewPort.toCoordY(pos.y);
-            offsetX = x - 100;
-            offsetY = y + 10;
-            if (pos.y >= 25) {
-                offsetY = y - 30;
-            }
-            gc.drawText(station.getTotalEnergyLoaded()+" energy units loaded ("+station.getEnergyLoadCount()+")", offsetX, offsetY, true);
+            offsetX = x;
+            offsetY = y - 20;
+            gc.drawText(Integer.toString(station.getEnergyLoadCount()), offsetX, offsetY, true);
 
         }
     }
