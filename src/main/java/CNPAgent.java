@@ -279,8 +279,8 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
         this.assignedTaskManager = time;
     }
 
-    public void assignTask(Task task) {
-        if (this.followingThisAgent.isPresent()) {
+    protected void assignTask(Task task) {
+        if (this.isFollowingATaskManager()) {
             this.assignedTask = Optional.of(task);
             /*
             Wanneer de robot op weg is naar een taskstation moet hij dit stoppen
@@ -296,7 +296,7 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
             }
 
         } else
-            throw new IllegalStateException("WHAT NU WEER");
+            throw new IllegalStateException("ERROR");
     }
 
 
@@ -324,8 +324,8 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
         boolean base = this.charging < 0 && !this.assignedTask.isPresent() &&
                 !this.carryingTask.isPresent() && !this.batteryStation.isPresent() && !this.followingThisAgent.isPresent();
         boolean notTask = base && ! this.taskManagerTask.isPresent();
-        boolean taskbase = this.isTaskManager() && time - this.assignedTaskManager >= taskManagerTimeOut;
-        boolean task = taskbase && base;
+        boolean taskBase = this.isTaskManager() && time - this.assignedTaskManager >= taskManagerTimeOut;
+        boolean task = taskBase && base;
         return task || notTask;
     }
 
