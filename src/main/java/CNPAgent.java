@@ -113,6 +113,7 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
             this.decreaseEnergyWith(moveCost);
 
         }
+
         if (this.isTaskManager())
             this.taskManagerTick(timeLapse);
     }
@@ -423,9 +424,6 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
                 this.followingThisAgent = Optional.absent();
             } else if (m.getContents().equals(TaskMessageContents.TaskMessage.GIVE_TASK_MANAGER_TASK) &&
                     this.isTaskManager() && this.canBeWorkerFor(cnpAgent)) {
-                if (this.taskManagerTask.get().hasBeenAssigned()) {
-                    System.out.println("Test");
-                }
                 this.send(TaskMessageContents.TaskMessage.TASK_MANAGER_TASK, this.taskManagerTask.get(), cnpAgent);
             } else if (m.getContents().equals(TaskMessageContents.TaskMessage.TASK_MANAGER_TASK) && cnpAgent.isTaskManager() && this.isTaskManager() && this.startedWaitingForTaskManagerTask > 0) {
                 System.out.println(this.toString()+": Task from "+cnpAgent.toString()+" received. Can now be assigned as worker. I take over his task.");
