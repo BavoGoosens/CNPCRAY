@@ -255,7 +255,7 @@ public class CNPAgent extends Vehicle implements CommUser {
     private double calculateProposal(Point p){
         double manhattan = sqrt(pow((this.getPosition().get().x - p.x),2) + pow((this.getPosition().get().y - p.y), 2));
         double energyCost = (this.roadModel.get().getShortestPathTo(this, p).size() - 1) * moveCost * 72;
-        double chargeChance = (1 - this.getEnergyPercentage()) + 0.000000001234;
+        double chargeChance = (100 - this.getEnergyPercentage()) + 0.000000001234;
         return (manhattan + energyCost) * chargeChance;
     }
 
