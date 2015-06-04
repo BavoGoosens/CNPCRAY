@@ -364,7 +364,9 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
             CNPAgent cnpAgent = (CNPAgent) sender;
             if (m.getContents().equals(TaskMessageContents.TaskMessage.WORKER_NEEDED) && this.canAcceptNewTasks(time)) {
                 if (this.isTaskManager()) {
-                    System.out.println(this.toString() + ": I don't want to be a task manager anymore. Bid for worker.");
+                    for (CNPAgent worker: this.possibleWorkers) {
+                        this.send(TaskMessageContents.TaskMessage.WORKER_DECLINED, worker);
+                    }
                 }
                 this.send(TaskMessageContents.TaskMessage.WANT_TO_BE_WORKER, sender);
                 this.followAgent = Optional.of(cnpAgent);
