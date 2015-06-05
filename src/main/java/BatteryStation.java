@@ -23,7 +23,7 @@ public class BatteryStation implements CommUser, RoadUser{
     private final double range;
     private final double reliability;
     private final Point position;
-    private ArrayList<EnergyLoad> energyLoads = new ArrayList<EnergyLoad>();
+    private ArrayList<EnergyLoad> energyLoads = new ArrayList<>();
     private String name;
 
     public BatteryStation(String name, RandomGenerator rng, Point p){
@@ -46,6 +46,7 @@ public class BatteryStation implements CommUser, RoadUser{
         }
         long energyLoaded = agent.loadFullBattery();
         this.energyLoads.add(new EnergyLoad(agent, energyLoaded));
+        CNPCray.stats.dataUpdate(this.name, "power_consumption", "energy loaded", energyLoaded);
         //System.out.println(this.toString()+": Charging battery for "+agent.toString()+" ("+energyLoaded+" units).");
         return energyLoaded;
     }

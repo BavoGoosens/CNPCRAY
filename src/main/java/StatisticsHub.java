@@ -1,7 +1,6 @@
-import com.sun.org.glassfish.external.statistics.Statistic;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.List;
 
 /**
@@ -9,17 +8,21 @@ import java.util.List;
  */
 public class StatisticsHub {
 
-    private HashMap<String, HashMap<String, Object>> data = new HashMap<>();
+    private HashMap<String, ArrayList<String>> data = new HashMap<>();
 
     public StatisticsHub(){
 
     }
 
     public synchronized void dataUpdate(String agentName, String dataClass,  String dataType, Object entry){
+        String dataEntry = dataClass + " , " + dataType + " , " + entry + " ;";
         if (this.data.containsKey(agentName)){
-
+            ArrayList entriesForAgent = this.data.get(agentName);
+            entriesForAgent.add(dataEntry);
         } else {
-            //data.put(agentName, new HashMap<String, Object>(dataClass,  );
+            ArrayList agentList = new ArrayList();
+            agentList.add(dataEntry);
+            data.put(agentName, agentList);
         }
     }
 

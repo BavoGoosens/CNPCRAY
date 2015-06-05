@@ -124,21 +124,25 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
         } else {
             if (this.isWaitingForProposals() && timeLapse.getTime() - this.proposalRoundInitiation >= proposalTimeOut) {
                 if (this.proposals.isEmpty()) {
+                    CNPCray.stats.dataUpdate(this.name, "timing", "proposal timeout", timeLapse.getTime() - this.proposalRoundInitiation);
                     this.proposalRoundInitiation = 0;
                     System.out.println(this.toString() + ": No proposals returned. Search for new workers.");
                 } else if (this.startedWaitingForTaskManagerTask > 0
                         && timeLapse.getTime() - this.startedWaitingForTaskManagerTask >= taskManagerTaskTimeOut) {
+                    CNPCray.stats.dataUpdate(this.name, "timing", "waiting for task timeout", timeLapse.getTime() - this.startedWaitingForTaskManagerTask);
                     this.startedWaitingForTaskManagerTask = 0;
                     System.out.println(this.toString() + ": No task manager task returned, start over...");
                 } else {
                     CNPAgent bestAgent = getWorkerWithBestProposal();
                     if (bestAgent.isTaskManager()) {
                         this.send(TaskMessageContents.TaskMessage.GIVE_TASK_MANAGER_TASK, bestAgent);
+                        CNPCray.stats.dataUpdate(this.name, "communication", "give_task_manager_task", 1);
                         this.startedWaitingForTaskManagerTask = timeLapse.getTime();
                         System.out.println(this.toString() + ": " + bestAgent.toString() + " is assigned as worker (chosen out of " + this.proposals.size() + " proposals), " +
                                 "but wait for task manager task first.");
                     } else {
                         this.send(TaskMessageContents.TaskMessage.WORKER_ASSIGNED, this.taskManagerTask.get(), bestAgent);
+                        CNPCray.stats.dataUpdate(this.name, "communication", "worker_assigned", 1);
                         this.taskManagerTask = Optional.absent();
                         System.out.println(this.toString() + ": " + bestAgent.toString() + " assigned as worker (chosen out of " + this.proposals.size() + " proposals).");
                     }
@@ -158,6 +162,7 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
             if (this.retransmission < 0) {
                 this.retransmission = 100;
                 this.broadcast(TaskMessageContents.TaskMessage.WORKER_NEEDED);
+                CNPCray.stats.dataUpdate(this.name, "communication", "worker_needed retransmit", 1);
             }
         }
     }
@@ -233,6 +238,7 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
             this.assignedTask = Optional.absent();
             try {
                 this.pdpModel.get().pickup(this, this.carryingTask.get(), timeLapse);
+                CNPCray.stats.dataUpdate(this.name, "count", "agent pick up", 1);
             } catch (IllegalArgumentException e) {
                 System.out.println("Agent at position "+this.getPosition().get()+" tried to pickup task "+
                         this.carryingTask.get().toString()+" at position "
@@ -244,6 +250,7 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
         } else if (this.carryingTask.isPresent()) {
             // aangekomen op eindbestemming
             this.pdpModel.get().deliver(this, this.carryingTask.get(), timeLapse);
+            CNPCray.stats.dataUpdate(this.name, "count", "agent deliver", 1);
             if (this.carryingTask.get().getTaskStation().fixedratio)
                 this.carryingTask.get().getTaskStation().taskDone();
             this.carryingTask.get().drop();
@@ -396,6 +403,7 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
             if (content.equals(TaskMessageContents.TaskMessage.WORKER_NEEDED) && canAcceptNewTasks(time)) {
                 this.freeFollowers();
                 this.send(TaskMessageContents.TaskMessage.WANT_TO_BE_WORKER, sender);
+                CNPCray.stats.dataUpdate(this.name, "communication", "wants_to be_worker", 1);
                 this.followingThisAgent = Optional.of(cnpAgent);
                 this.destination = Optional.absent();
                 this.taskStation = Optional.absent();
@@ -404,6 +412,7 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
                 if (this.possibleWorkers.size() >= this.workersNeeded() && !this.isWaitingForProposals() &&  !this.isWaitingForTaskTakeOver()) {
                     for (CNPAgent worker: this.possibleWorkers) {
                         this.send(TaskMessageContents.TaskMessage.GIVE_PROPOSAL, this.taskManagerTask.get(), worker);
+                        CNPCray.stats.dataUpdate(this.name, "communication", "give_proposal", 1);
                     }
                     System.out.println(this.toString() + ": Proposals needed from possible workers.");
                     this.proposalRoundInitiation = time;
@@ -416,16 +425,19 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
                    throw e;
                 }
                 this.send(TaskMessageContents.TaskMessage.PROPOSAL, proposal, cnpAgent);
+                CNPCray.stats.dataUpdate(this.name, "communication", "proposal", 1);
             } else if (content.equals(TaskMessageContents.TaskMessage.PROPOSAL) && isTaskManager() && isWaitingForProposals()) {
                 double proposal = content.getProposal();
                 this.proposals.put(cnpAgent, proposal);
             } else if (content.equals(TaskMessageContents.TaskMessage.GIVE_TASK_MANAGER_TASK) &&
                     this.isTaskManager() && this.canBeWorkerFor(cnpAgent)) {
                 this.send(TaskMessageContents.TaskMessage.TASK_MANAGER_TASK, this.taskManagerTask.get(), cnpAgent);
+                CNPCray.stats.dataUpdate(this.name, "communication", "task_manager_task", 1);
             } else if (content.equals(TaskMessageContents.TaskMessage.TASK_MANAGER_TASK) && cnpAgent.isTaskManager()
                     && this.isTaskManager() && isWaitingForTaskTakeOver()) {
                 System.out.println(this.toString()+": Task from "+cnpAgent.toString()+" received. Can now be assigned as worker. I take over his task.");
                 this.send(TaskMessageContents.TaskMessage.WORKER_ASSIGNED, this.taskManagerTask.get(), cnpAgent);
+                CNPCray.stats.dataUpdate(this.name, "communication", "worker_assigned", 1);
                 this.taskManagerTask = Optional.of(content.getTask());
                 this.startedWaitingForTaskManagerTask = 0;
             }  else if (content.equals(TaskMessageContents.TaskMessage.WORKER_ASSIGNED) && this.canBeWorkerFor(cnpAgent)) {
