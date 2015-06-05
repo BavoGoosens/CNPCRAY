@@ -36,6 +36,8 @@ public class CNPCray {
 
     static RoadModel roadModel;
 
+    static StatisticsHub stats;
+
     /**
      * @param args - No args.
      */
@@ -45,6 +47,7 @@ public class CNPCray {
         int numberOfAgents = 50;
         final RandomGenerator rng = new MersenneTwister(123);
         final DefaultPDPModel pdpModel = DefaultPDPModel.create();
+        stats = new StatisticsHub();
         final CommModel commModel = CommModel.builder().build();
         roadModel = new CNPRoadModel(createGraph(graphSize, numberOfEmptyConnections));
         sim = Simulator.builder()
