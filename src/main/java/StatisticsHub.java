@@ -1,4 +1,6 @@
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -8,10 +10,12 @@ import java.util.List;
  */
 public class StatisticsHub {
 
+    private String filename;
+
     private HashMap<String, ArrayList<String>> data = new HashMap<>();
 
-    public StatisticsHub(){
-
+    public StatisticsHub(String experiment){
+        this.filename = experiment;
     }
 
     public synchronized void dataUpdate(String agentName, String dataClass,  String dataType, Object entry){
@@ -20,6 +24,8 @@ public class StatisticsHub {
             ArrayList entriesForAgent = this.data.get(agentName);
             entriesForAgent.add(dataEntry);
         } else {
+            if (agentName.contains("Task"))
+                System.out.println("  ");
             ArrayList agentList = new ArrayList();
             agentList.add(dataEntry);
             data.put(agentName, agentList);
@@ -27,11 +33,18 @@ public class StatisticsHub {
     }
 
     public void exportRoadUsersToCSV(){
-
-    }
-
-    public void exportDataTypeToCSV(){
-
+        try{
+            for (String agent : this.data.keySet()){
+                ArrayList<String> agentData = this.data.get(agent);
+                FileWriter writer = new FileWriter(this.filename + "____" + agent);
+                for (String entry: agentData){
+                    writer.append(entry);
+                    writer.append("\n");
+                }
+            }
+        } catch (IOException e){
+            System.out.println("duhduhdu");
+        }
     }
 
     //hoe lang tot allocation van tasks

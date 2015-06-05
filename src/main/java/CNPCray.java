@@ -47,7 +47,7 @@ public class CNPCray {
         int numberOfAgents = 50;
         final RandomGenerator rng = new MersenneTwister(123);
         final DefaultPDPModel pdpModel = DefaultPDPModel.create();
-        stats = new StatisticsHub();
+        stats = new StatisticsHub("experiment_propagation_run1");
         final CommModel commModel = CommModel.builder().build();
         roadModel = new CNPRoadModel(createGraph(graphSize, numberOfEmptyConnections));
         sim = Simulator.builder()
@@ -131,7 +131,9 @@ public class CNPCray {
     static void stopSim(String voterName){
         if (!vote.contains(voterName))
             vote.add(voterName);
-        if (vote.size() >= 4)
+        if (vote.size() >= 4){
             sim.stop();
+            stats.exportRoadUsersToCSV();
+        }
     }
 }
