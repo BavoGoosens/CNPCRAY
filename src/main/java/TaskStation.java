@@ -42,7 +42,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
         device = Optional.absent();
         range = rng.nextDouble();
         reliability = rng.nextDouble();
-        this.taskCount = 200;
+        this.taskCount = 100;
     }
 
     @Override
@@ -61,7 +61,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
 
     @Override
     public void initRoadUser(RoadModel roadModel) {
-        this.roadModel = Optional.of((RoadModel) roadModel);
+        this.roadModel = Optional.of(roadModel);
         Point p;
         /*while (roadModel.get().isOccupied(p = model.getRandomPosition(rng))) {}*/
         p = roadModel.getRandomPosition(rng);
@@ -83,7 +83,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
             this.device.get().broadcast(
                     new TaskMessageContents(TaskMessageContents.TaskMessage.TASK_MANAGER_NEEDED)
             );
-            CNPCray.stats.dataUpdate(this.name, "communitcation", "broadcast", 1);
+            CNPCray.stats.dataUpdate(this.name, "communication", "TASK_MANAGER_NEEDED broadcast", 1);
             this.taskCount--;
         }
 
@@ -121,6 +121,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
             this.device.get().broadcast(
                     new TaskMessageContents(TaskMessageContents.TaskMessage.TASK_MANAGER_NEEDED)
             );
+            CNPCray.stats.dataUpdate(this.name, "communication", "TASK_MANAGER_NEEDED retransmission broadcast", 1);
         }
 
     }
@@ -138,6 +139,7 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
                 CNPAgent agent = (CNPAgent) sender;
                 try {
                     agent.declareTaskManager(task, time);
+                    CNPCray.stats.dataUpdate(task.toString(), "timing", "initial taskmanager found", time);
                     assigned = true;
                     System.out.println(this.toString()+": "+agent.toString()+" assigned task manager.");
                     if (this.fixedratio)

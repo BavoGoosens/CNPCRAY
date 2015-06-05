@@ -78,6 +78,7 @@ public class PropagateCNPAgent extends CNPAgent {
             if (this.retransmission < 0) {
                 this.retransmission = 100;
                 this.broadcast(TaskMessageContents.TaskMessage.GIVE_PROPOSAL, this.taskManagerTask.get());
+                CNPCray.stats.dataUpdate(this.name, "communication", "give_proposal retransmit", 1);
                 //System.out.println(this.toString()+": Transmitting...");
             }
         } else {
@@ -117,6 +118,7 @@ public class PropagateCNPAgent extends CNPAgent {
                         throw e;
                     }
                     this.send(TaskMessageContents.TaskMessage.PROPOSAL, proposal, cnpAgent);
+                    CNPCray.stats.dataUpdate(this.name, "communication", "proposal", 1);
                     System.out.println(this.toString() + ": My proposal for " + cnpAgent.toString() + ": " + proposal);
                     this.proposalInitiated = time;
                 }
@@ -125,9 +127,12 @@ public class PropagateCNPAgent extends CNPAgent {
                 if (proposal < this.calculateProposal(this.taskManagerTask.get().getPosition())) {
                     this.send(TaskMessageContents.TaskMessage.TASK_MANAGER_ASSIGNED, this.taskManagerTask.get(), cnpAgent);
                     this.taskManagerTask.get().hop();
+                    CNPCray.stats.dataUpdate(this.name, "count", "passed along", 1);
+                    CNPCray.stats.dataUpdate(this.taskManagerTask.get().toString(), "timing", "hop", time);
                     this.taskManagerTask = Optional.absent();
                     System.out.println(this.toString()+": Proposal from "+cnpAgent.toString()+" is better. Propagate task.");
                 } else {
+                    CNPCray.stats.dataUpdate(this.name, "count", "i am better", 1);
                     System.out.println(this.toString()+": Proposal from "+cnpAgent.toString()+" is not better. Do not propagate task.");
                 }
             } else if (content.equals(TaskMessageContents.TaskMessage.TASK_MANAGER_ASSIGNED)) {
@@ -168,6 +173,8 @@ public class PropagateCNPAgent extends CNPAgent {
                 throw e;
             }
             this.carryingTask.get().pickUp(this);
+            CNPCray.stats.dataUpdate(this.carryingTask.get().toString(), "timing", "pick up", timeLapse.getTime());
+            CNPCray.stats.dataUpdate(this.carryingTask.get().toString(), "count", "hops", this.carryingTask.get().getHops());
             System.out.println(this.toString()+": Pick up parcel after "+this.carryingTask.get().getHops()+" hops.");
             this.setNextDestination(this.carryingTask.get().getDestination());
         } else if (this.carryingTask.isPresent()) {
@@ -176,6 +183,8 @@ public class PropagateCNPAgent extends CNPAgent {
             if (this.carryingTask.get().getTaskStation().fixedratio)
                 this.carryingTask.get().getTaskStation().taskDone();
             this.carryingTask.get().drop();
+            CNPCray.stats.dataUpdate(this.name, "count", "agent deliver", 1);
+            CNPCray.stats.dataUpdate(this.carryingTask.get().toString(), "timing", "deliver", timeLapse.getTime());
             this.carryingTask = Optional.absent();
             this.setNextDestination(null);
         } else {
@@ -190,6 +199,7 @@ public class PropagateCNPAgent extends CNPAgent {
             throw new IllegalStateException("Agent cannot be task manager at this moment. " +
                 "Try with another agent or try again later.");
         this.taskStation = Optional.absent();
+        CNPCray.stats.dataUpdate(this.name, "count", "became taskmanager", 1);
         this.taskManagerTask = Optional.of(task);
         this.setNextDestination(task.getPosition());
     }

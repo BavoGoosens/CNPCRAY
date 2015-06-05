@@ -47,8 +47,7 @@ public class Task extends Parcel {
         return this.taskStation;
     }
 
-    public void pickUp(CNPAgent agent) {
-        this.agent = agent;
+    public void pickUp(CNPAgent agent) { this.agent = agent;
     }
 
     public void drop() {

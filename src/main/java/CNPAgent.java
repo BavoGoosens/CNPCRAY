@@ -129,7 +129,7 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
                     System.out.println(this.toString() + ": No proposals returned. Search for new workers.");
                 } else if (this.startedWaitingForTaskManagerTask > 0
                         && timeLapse.getTime() - this.startedWaitingForTaskManagerTask >= taskManagerTaskTimeOut) {
-                    CNPCray.stats.dataUpdate(this.name, "timing", "waiting for task timeout", timeLapse.getTime() - this.startedWaitingForTaskManagerTask);
+                    CNPCray.stats.dataUpdate(this.name, "timing", "Waiting for other agent task timeout", timeLapse.getTime() - this.startedWaitingForTaskManagerTask);
                     this.startedWaitingForTaskManagerTask = 0;
                     System.out.println(this.toString() + ": No task manager task returned, start over...");
                 } else {
@@ -142,6 +142,7 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
                                 "but wait for task manager task first.");
                     } else {
                         this.send(TaskMessageContents.TaskMessage.WORKER_ASSIGNED, this.taskManagerTask.get(), bestAgent);
+                        CNPCray.stats.dataUpdate(this.taskManagerTask.get().toString(), "timing", "delegate task", timeLapse.getTime());
                         CNPCray.stats.dataUpdate(this.name, "communication", "worker_assigned", 1);
                         this.taskManagerTask = Optional.absent();
                         System.out.println(this.toString() + ": " + bestAgent.toString() + " assigned as worker (chosen out of " + this.proposals.size() + " proposals).");
@@ -191,6 +192,8 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
         if (this.followingThisAgent.isPresent()) {
             if (this.getEnergyPercentage() < 30) {
                 this.send(TaskMessageContents.TaskMessage.LEAVING, this.followingThisAgent.get());
+                CNPCray.stats.dataUpdate(this.name, "communication", "leaving", 1);
+                CNPCray.stats.dataUpdate(this.name, "timing", "stop folowing", timeLapse.getTime());
                 this.followingThisAgent = Optional.absent();
             } else {
                 this.path = new LinkedList<>(
@@ -206,6 +209,7 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
             // Agent is naar taskstation aan het bewegen en komt in range dus gaat offer maken.
             if (this.inRange(this.taskStation.get().getPosition().get())) {
                 this.send(TaskMessageContents.TaskMessage.WANT_TO_BE_TASK_MANAGER, this.taskStation.get());
+                CNPCray.stats.dataUpdate(this.name, "communication", "want_to_be_task_manager", 1);
                 this.taskStation = Optional.absent();
                 this.setNextDestination(null);
             }
@@ -239,6 +243,7 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
             try {
                 this.pdpModel.get().pickup(this, this.carryingTask.get(), timeLapse);
                 CNPCray.stats.dataUpdate(this.name, "count", "agent pick up", 1);
+                CNPCray.stats.dataUpdate(this.carryingTask.get().toString(), "timing", "pick up", timeLapse.getTime());
             } catch (IllegalArgumentException e) {
                 System.out.println("Agent at position "+this.getPosition().get()+" tried to pickup task "+
                         this.carryingTask.get().toString()+" at position "
@@ -251,6 +256,7 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
             // aangekomen op eindbestemming
             this.pdpModel.get().deliver(this, this.carryingTask.get(), timeLapse);
             CNPCray.stats.dataUpdate(this.name, "count", "agent deliver", 1);
+            CNPCray.stats.dataUpdate(this.carryingTask.get().toString(), "timing", "deliver", timeLapse.getTime());
             if (this.carryingTask.get().getTaskStation().fixedratio)
                 this.carryingTask.get().getTaskStation().taskDone();
             this.carryingTask.get().drop();
@@ -298,6 +304,7 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
     public void declareTaskManager(Task task, long time) {
         if (!this.canBeTaskManager()) throw new IllegalStateException("Agent cannot be task manager at this moment. " +
                 "Try with another agent or try again later.");
+        CNPCray.stats.dataUpdate(this.name, "count", "became taskmanager", 1);
         this.taskManagerTask = Optional.of(task);
         this.taskManagerInitiated = time;
     }
@@ -405,6 +412,7 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
                 this.send(TaskMessageContents.TaskMessage.WANT_TO_BE_WORKER, sender);
                 CNPCray.stats.dataUpdate(this.name, "communication", "wants_to be_worker", 1);
                 this.followingThisAgent = Optional.of(cnpAgent);
+                CNPCray.stats.dataUpdate(this.name, "count" , "started following", 1);
                 this.destination = Optional.absent();
                 this.taskStation = Optional.absent();
             } else if (content.equals((TaskMessageContents.TaskMessage.WANT_TO_BE_WORKER)) && isTaskManager()) {
@@ -443,8 +451,11 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
             }  else if (content.equals(TaskMessageContents.TaskMessage.WORKER_ASSIGNED) && this.canBeWorkerFor(cnpAgent)) {
                 this.assignTask(content.getTask());
                 this.taskManagerTask = Optional.absent();
+                CNPCray.stats.dataUpdate(content.getTask().toString(), "timing", "task initiated", time);                CNPCray.stats.dataUpdate(content.getTask().toString(), "timing", "task initiated", time);
+                CNPCray.stats.dataUpdate(this.name, "count", "took up task", 1);
                 this.freeFollowers();
             } else if (content.equals(TaskMessageContents.TaskMessage.WORKER_DECLINED)) {
+                CNPCray.stats.dataUpdate(this.name, "count", "declined", 1);
                 this.followingThisAgent = Optional.absent();
             } else if (content.equals(TaskMessageContents.TaskMessage.LEAVING) && this.isTaskManager()) {
                 this.possibleWorkers.remove(cnpAgent);
