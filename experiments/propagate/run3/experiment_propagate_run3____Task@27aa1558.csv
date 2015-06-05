@@ -1,0 +1,9 @@
+task , time_of_creation , 27039000 ;
+timing , initial taskmanager found , 27312000 ;
+timing , hop , 27414000 ;
+timing , hop , 27425000 ;
+timing , hop , 27628000 ;
+timing , hop , 28740000 ;
+timing , pick up , 30325010 ;
+count , hops , 4 ;
+timing , deliver , 33854010 ;

@@ -1,0 +1,7 @@
+task , time_of_creation , 48826000 ;
+timing , initial taskmanager found , 96184000 ;
+timing , delegate task , 100833000 ;
+timing , task initiated , 100833000 ;
+timing , task initiated , 100833000 ;
+timing , pick up , 100977010 ;
+timing , deliver , 102274010 ;
