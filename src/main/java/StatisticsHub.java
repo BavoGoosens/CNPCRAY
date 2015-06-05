@@ -19,7 +19,7 @@ public class StatisticsHub {
         if (this.data.containsKey(agentName)){
 
         } else {
-            data.put(agentName, new HashMap<String, Object>(dataClass,  );
+            //data.put(agentName, new HashMap<String, Object>(dataClass,  );
         }
     }
 
