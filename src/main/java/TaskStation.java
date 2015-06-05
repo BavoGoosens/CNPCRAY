@@ -78,8 +78,8 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
             Task t = new Task(ori, this.position, 10, this);
             CNPCray.stats.dataUpdate(t.toString(),"task", "time_of_creation", timeLapse.getTime());
             this.stillToBeAssignedTasks.add(t);
-            this.pdpmodel.get().register(t);
-            this.roadModel.get().register(t);
+            //this.pdpmodel.get().register(t);
+            CNPCray.sim.register(t);
             this.device.get().broadcast(
                     new TaskMessageContents(TaskMessageContents.TaskMessage.TASK_MANAGER_NEEDED)
             );
@@ -155,11 +155,11 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
 
     @Override
     public void afterTick(TimeLapse timeLapse) {
-        if (taskCount <= 0 && hurryUp >= 0){
-            this.hurryUp -= 1;
-        } else if (hurryUp <= 0){
-            CNPCray.stopSim(this.name);
-        }
+//        if (taskCount <= 0 && hurryUp >= 0){
+//            this.hurryUp -= 1;
+//        } else if (hurryUp <= 0){
+//            CNPCray.stopSim(this.name);
+//        }
     }
 
     @Override

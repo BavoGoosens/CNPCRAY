@@ -36,11 +36,13 @@ public class StatisticsHub {
         try{
             for (String agent : this.data.keySet()){
                 ArrayList<String> agentData = this.data.get(agent);
-                FileWriter writer = new FileWriter(this.filename + "____" + agent);
+                FileWriter writer = new FileWriter(this.filename + "____" + agent + ".csv");
                 for (String entry: agentData){
                     writer.append(entry);
                     writer.append("\n");
                 }
+                writer.flush();
+                writer.close();
             }
         } catch (IOException e){
             System.out.println("duhduhdu");

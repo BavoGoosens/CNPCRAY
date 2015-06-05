@@ -53,6 +53,7 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
 
     protected final static double speed = 50;
     protected final static long moveCost = 3;
+    protected final static long operationCost = 1;
     protected final static long sendCost = 0;
     protected final static long broadcastCost = 0;
     protected final static long fullEnergy = 30000;
@@ -92,6 +93,7 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
 
         Point p;
         p = roadModel.getRandomPosition(rng);
+        prev = roadModel.getRandomPosition(rng);
         roadModel.addObjectAt(this, p);
     }
 
@@ -107,15 +109,26 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
         if (this.charging >= 0) {
             // if charging: wait and do nothing
             this.charging--;
-        } else if (this.energy - moveCost >= 0) {
+        } else if (hasMoved() &&(this.energy - moveCost >= 0)) {
             // if enough energy: move to destination
             this.move(timeLapse);
             this.decreaseEnergyWith(moveCost);
-
+        } else {
+            this.move(timeLapse);
+            this.decreaseEnergyWith(operationCost);
         }
 
         if (this.isTaskManager())
             this.taskManagerTick(timeLapse);
+    }
+
+    protected Point prev;
+    protected boolean hasMoved(){
+        Point temp = prev;
+        Point curr = this.roadModel.get().getPosition(this);
+        prev = curr;
+        return !temp.equals(curr);
+//        return true;
     }
 
     protected void taskManagerTick(TimeLapse timeLapse){
@@ -190,7 +203,7 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
 
     protected void move(TimeLapse timeLapse) {
         if (this.followingThisAgent.isPresent()) {
-            if (this.getEnergyPercentage() < 30) {
+            if (this.getEnergyPercentage() < 15) {
                 this.send(TaskMessageContents.TaskMessage.LEAVING, this.followingThisAgent.get());
                 CNPCray.stats.dataUpdate(this.name, "communication", "leaving", 1);
                 CNPCray.stats.dataUpdate(this.name, "timing", "stop folowing", timeLapse.getTime());
