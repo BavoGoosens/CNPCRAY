@@ -76,12 +76,14 @@ public class TaskStation implements CommUser, RoadUser, TickListener {
             //RandomLy generate new Tasks
             Point ori =this.roadModel.get().getRandomPosition(rng);
             Task t = new Task(ori, this.position, 10, this);
+            CNPCray.stats.dataUpdate(t.toString(),"task", "time_of_creation", timeLapse.getTime());
             this.stillToBeAssignedTasks.add(t);
             this.pdpmodel.get().register(t);
             this.roadModel.get().register(t);
             this.device.get().broadcast(
                     new TaskMessageContents(TaskMessageContents.TaskMessage.TASK_MANAGER_NEEDED)
             );
+            CNPCray.stats.dataUpdate(this.name, "communitcation", "broadcast", 1);
             this.taskCount--;
         }
 
