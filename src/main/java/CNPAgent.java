@@ -175,7 +175,7 @@ public abstract class CNPAgent extends Vehicle implements CommUser {
         return bestAgent;
     }
 
-    private void freeFollowers() {
+    protected void freeFollowers() {
         for (CNPAgent follower: this.possibleWorkers){
             this.send(TaskMessageContents.TaskMessage.WORKER_DECLINED, follower);
         }

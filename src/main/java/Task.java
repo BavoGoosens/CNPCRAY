@@ -17,12 +17,14 @@ public class Task extends Parcel {
     private CNPAgent agent = null;
     private TaskStation taskStation;
     private boolean isDelivered = false;
-    private int hop;
+    private int hop = maximumNumberOfHops;
+    private static final int maximumNumberOfHops = 10;
 
     public Task(Point origin, Point destination, long pickupDuration, TaskStation orderingTaskStation) {
         super(destination, pickupDuration, TimeWindow.ALWAYS, pickupDuration, TimeWindow.ALWAYS, 1);
         this.taskStation = orderingTaskStation;
         this.origin = origin;
+        this.hop = maximumNumberOfHops;
     }
 
     public Point getPosition() {
@@ -31,6 +33,10 @@ public class Task extends Parcel {
 
     public Point getOrigin() {
         return this.origin;
+    }
+
+    public int getHops() {
+        return maximumNumberOfHops - this.hop;
     }
 
     public CNPAgent getAgent() {
